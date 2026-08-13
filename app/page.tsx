@@ -1,57 +1,86 @@
+"use client";
+
+import { useState } from "react";
+
 export default function Home() {
+  const [showInfo, setShowInfo] = useState(false);
+
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        background: "#f7f7f5",
-        fontFamily: "system-ui",
-      }}
-    >
-      <div
-        style={{
-          textAlign: "center",
-          maxWidth: "500px",
-          padding: "2rem",
-        }}
-      >
-        <h1
-          style={{
-            fontSize: "3rem",
-            marginBottom: "0.5rem",
-          }}
-        >
-          Progetto .0
+    <main>
+      <div>
+        <div className="hero-ball">🎾</div>
+
+        <p className="eyebrow">PADEL ON TUESDAY</p>
+
+        <h1>
+          Il campionato.
+          <br />
+          Ogni martedì.
         </h1>
 
-        <p
-          style={{
-            fontSize: "1.2rem",
-            color: "#555",
-            marginBottom: "2rem",
-          }}
-        >
-          Prepara la mente.
+        <p className="intro">
+          Scegli i giocatori, organizza le partite,
           <br />
-          Prima della partita.
+          registra i risultati e scala la classifica.
         </p>
 
-        <button
-          style={{
-            background: "#111",
-            color: "white",
-            border: "none",
-            padding: "16px 36px",
-            borderRadius: "12px",
-            fontSize: "1.1rem",
-            cursor: "pointer",
-          }}
-        >
-          Inizia la preparazione
-        </button>
+        <div className="home-actions">
+          <button
+            className="primary-button"
+            onClick={() => (window.location.href = "/dashboard")}
+          >
+            Entra nel campionato
+            <span>→</span>
+          </button>
+
+          <button
+            className="secondary-button"
+            onClick={() => setShowInfo(true)}
+          >
+            Come funziona
+          </button>
+        </div>
+
+        <div className="season-info">
+          <span>STAGIONE</span>
+          <strong>2026–27</strong>
+        </div>
       </div>
+
+      {showInfo && (
+        <div className="info-overlay">
+          <div className="info-card">
+            <button
+              className="close-button"
+              onClick={() => setShowInfo(false)}
+            >
+              ×
+            </button>
+
+            <p className="eyebrow">PADEL ON TUESDAY</p>
+
+            <h2>Come funziona</h2>
+
+            <p>
+              Ogni martedì si scelgono i giocatori presenti,
+              si organizzano le partite e si registrano i risultati.
+            </p>
+
+            <p>
+              La classifica si aggiorna automaticamente
+              dopo ogni giornata.
+            </p>
+
+            <button
+              className="primary-button"
+              onClick={() => setShowInfo(false)}
+            >
+              Iniziamo
+              <span>→</span>
+            </button>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
