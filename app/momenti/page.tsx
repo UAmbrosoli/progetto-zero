@@ -249,182 +249,246 @@ export default function Momenti() {
 }
 
 
-  return (
-    <main
-      style={{
-        maxWidth: 900,
-        margin: "0 auto",
-        padding: "24px 16px 48px",
-      }}
-    >
-      <Link
-        href="/dashboard"
-        style={{
-          display: "inline-block",
-          marginBottom: 20,
-          textDecoration: "none",
-          fontWeight: 700,
-        }}
-      >
-        ← Dashboard
-      </Link>
+   return (
+    <main className="dashboard-page">
 
-      <header style={{ marginBottom: 28 }}>
-        <h1
-          style={{
-            margin: 0,
-            fontSize: 32,
-            lineHeight: 1.1,
-          }}
-        >
-          Momenti memorabili
-        </h1>
+      {/* =====================================================
+          HEADER
+          ===================================================== */}
 
-        <p
-          style={{
-            marginTop: 10,
-            marginBottom: 0,
-            opacity: 0.65,
-          }}
+      <header className="dashboard-header">
+
+        <div>
+
+          <p className="eyebrow">
+            PADEL ON TUESDAY
+          </p>
+
+          <h1>
+            Momenti
+            <br />
+            memorabili
+          </h1>
+
+          <p className="dashboard-subtitle">
+            Le partite, i colpi e le storie
+            che vale la pena ricordare.
+          </p>
+
+        </div>
+
+        <Link
+          href="/dashboard"
+          className="back-link"
         >
-          Le partite, i colpi e le storie che vale la pena ricordare.
-        </p>
+          ← Dashboard
+        </Link>
+
       </header>
 
-      {loading && <p>Caricamento...</p>}
+
+      {/* =====================================================
+          CARICAMENTO
+          ===================================================== */}
+
+      {loading && (
+
+        <section className="players-card">
+
+          <div className="empty-ranking">
+
+            <div className="empty-icon">
+              🎾
+            </div>
+
+            <h3>
+              Recupero la storia della stagione...
+            </h3>
+
+          </div>
+
+        </section>
+
+      )}
+
+
+      {/* =====================================================
+          ERRORE
+          ===================================================== */}
 
       {!loading && message && (
-        <p
-          style={{
-            padding: 16,
-            borderRadius: 12,
-            background: "#fff3f3",
-          }}
-        >
-          {message}
-        </p>
-      )}
 
-      {!loading && !message && moments.length === 0 && (
-        <section
-          style={{
-            padding: 24,
-            borderRadius: 16,
-            background: "#f5f5f5",
-          }}
-        >
-          <h2 style={{ marginTop: 0 }}>
-            Ancora nessun momento memorabile
-          </h2>
+        <section className="players-card">
 
-          <p style={{ marginBottom: 0, opacity: 0.7 }}>
-            Quando durante una giornata registrerai un commento,
-            comparirà qui.
-          </p>
+          <div className="empty-ranking">
+
+            <div className="empty-icon">
+              ⚠️
+            </div>
+
+            <h3>
+              Non riesco a caricare i momenti.
+            </h3>
+
+            <p>
+              {message}
+            </p>
+
+          </div>
+
         </section>
+
       )}
 
-      {!loading && !message && moments.length > 0 && (
-        <section
-          style={{
-            display: "grid",
-            gap: 16,
-          }}
-        >
-          {moments.map((moment) => (
-            <article
-              key={moment.id}
-              style={{
-                padding: 20,
-                borderRadius: 18,
-                background: "white",
-                border: "1px solid rgba(0,0,0,0.08)",
-                boxShadow: "0 4px 16px rgba(0,0,0,0.05)",
-              }}
-            >
-              <div
-                style={{
-                  fontSize: 13,
-                  fontWeight: 800,
-                  letterSpacing: "0.04em",
-                  opacity: 0.6,
-                  marginBottom: 12,
-                }}
-              >
-                🎾 Campo {moment.match.court}
+
+      {/* =====================================================
+          NESSUN MOMENTO
+          ===================================================== */}
+
+      {!loading &&
+        !message &&
+        moments.length === 0 && (
+
+          <section className="players-card">
+
+            <div className="empty-ranking">
+
+              <div className="empty-icon">
+                ✦
               </div>
 
-              <div
-                style={{
-                  fontSize: 14,
-                  fontWeight: 700,
-                  marginBottom: 12,
-                }}
-              >
-                {formatDate(
-                  moment.match.matchday.match_date
-                )}
-              </div>
+              <h3>
+                Ancora nessun momento memorabile.
+              </h3>
 
-              <div
+              <p>
+                La stagione è appena cominciata.
+                Il primo momento da ricordare
+                deve ancora essere scritto.
+              </p>
+
+            </div>
+
+          </section>
+
+        )}
+
+
+      {/* =====================================================
+          ARCHIVIO DEI MOMENTI
+          ===================================================== */}
+
+      {!loading &&
+        !message &&
+        moments.length > 0 && (
+
+          <section className="moments-list">
+
+            {moments.map((moment, index) => (
+
+  <article
+    key={moment.id}
+    className="moment-item"
+  >
+
+    <div className="moment-item-top">
+
+      <span className="moment-number">
+        {String(index + 1).padStart(2, "0")}
+      </span>
+
+      <span className="moment-date">
+        {formatDate(
+          moment.match.matchday.match_date
+        )}
+      </span>
+
+      <span className="moment-court">
+        CAMPO {moment.match.court}
+      </span>
+
+    </div>
+
+
+    <div className="moment-item-content">
+
+      <div className="moment-teams">
+
+        <div className="moment-team">
+          {moment.match.players
+            .filter(
+              (player) => player.team === "A"
+            )
+            .map((player) =>
+              `${player.name} ${player.last_name}`.trim()
+            )
+            .join(" · ")}
+        </div>
+
+        <div className="moment-vs">
+          VS
+        </div>
+
+        <div className="moment-team">
+          {moment.match.players
+            .filter(
+              (player) => player.team === "B"
+            )
+            .map((player) =>
+              `${player.name} ${player.last_name}`.trim()
+            )
+            .join(" · ")}
+        </div>
+
+      </div>
+
+
+      <div className="moment-score">
+
+        {moment.match.sets
+          .map(
+            (set) =>
+              `${set.team1_score}–${set.team2_score}`
+          )
+          .join(" · ")}
+
+      </div>
+
+
+      <p
+  className="moment-story"
   style={{
-    display: "grid",
-    gap: 8,
-    marginBottom: 16,
-  }}
->
-  <div>
-    <strong>
-      {moment.match.players
-        .filter((player) => player.team === "A")
-        .map((player) =>
-          `${player.name} ${player.last_name}`.trim()
-        )
-        .join(" – ")}
-    </strong>
-  </div>
-
-  <div>
-    <strong>
-      {moment.match.players
-        .filter((player) => player.team === "B")
-        .map((player) =>
-          `${player.name} ${player.last_name}`.trim()
-        )
-        .join(" – ")}
-    </strong>
-  </div>
-</div>
-
-<div
-  style={{
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: 800,
-    marginBottom: 16,
+    lineHeight: 1.35,
+    margin: "18px 0 0",
+    letterSpacing: "-0.01em",
   }}
 >
-  {moment.match.sets
-    .map(
-      (set) =>
-        `${set.team1_score}–${set.team2_score}`
-    )
-    .join(" · ")}
+  “{moment.comment}”
+</p>
+
 </div>
 
-              <div
-                style={{
-                  padding: 16,
-                  borderRadius: 12,
-                  background: "#f7f7f7",
-                  fontStyle: "italic",
-                }}
-              >
-                “{moment.comment}”
-              </div>
-            </article>
-          ))}
-        </section>
-      )}
+{index < moments.length - 1 && (
+  <div
+    style={{
+      height: 1,
+      background: "rgba(60, 60, 60, 0.35)",
+      marginTop: 22,
+      marginBottom: 22,
+    }}
+  />
+)}
+
+</article>
+
+))}
+
+          </section>
+
+        )}
+
     </main>
   );
 }

@@ -633,8 +633,8 @@ export default function Storico() {
           </p>
 
           <h1>
-            Storico &amp; Statistiche
-          </h1>
+  Classifica e statistiche
+</h1>
 
           <p className="dashboard-subtitle">
             Stagione 2026–27
@@ -1079,159 +1079,120 @@ export default function Storico() {
           </section>
 
           <section
-            className="players-card"
-            style={{ marginTop: 20 }}
-          >
-            <div className="section-heading">
-              <div>
-                <p className="eyebrow">
-                  ⚔️ CONFRONTO DIRETTO
-                </p>
+  className="players-card"
+  style={{ marginTop: 20 }}
+>
+  <div className="section-heading">
+    <div>
+      <p className="eyebrow">
+        ⚔️ CONFRONTO DIRETTO
+      </p>
 
-                <h2>
-                  Quando sono avversari
-                </h2>
-              </div>
-            </div>
+      <h2>
+        Testa a testa
+      </h2>
+    </div>
+  </div>
 
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns:
-                  "1fr",
-                gap: 12,
-              }}
-            >
-              <select
-                value={selectedPlayerId}
-                onChange={(event) =>
-                  setSelectedPlayerId(
-                    event.target.value
-                  )
-                }
-                style={{
-                  width: "100%",
-                  padding: "13px 12px",
-                  borderRadius: 12,
-                  border:
-                    "1px solid rgba(0,0,0,0.15)",
-                  fontSize: 16,
-                  background:
-                    "white",
-                }}
-              >
-                {players.map(
-                  (player) => (
-                    <option
-                      key={player.id}
-                      value={player.id}
-                    >
-                      {displayPlayerName(
-                        player
-                      )}
-                    </option>
-                  )
-                )}
-              </select>
+  <div className="head-to-head-selectors">
 
-              <div
-                style={{
-                  textAlign:
-                    "center",
-                  fontWeight: 800,
-                  opacity: 0.5,
-                }}
-              >
-                VS
-              </div>
+    <select
+      value={selectedPlayerId}
+      onChange={(event) =>
+        setSelectedPlayerId(
+          event.target.value
+        )
+      }
+    >
+      {players.map((player) => (
+        <option
+          key={player.id}
+          value={player.id}
+        >
+          {displayPlayerName(player)}
+        </option>
+      ))}
+    </select>
 
-              <select
-                value={comparisonPlayerId}
-                onChange={(event) =>
-                  setComparisonPlayerId(
-                    event.target.value
-                  )
-                }
-                style={{
-                  width: "100%",
-                  padding: "13px 12px",
-                  borderRadius: 12,
-                  border:
-                    "1px solid rgba(0,0,0,0.15)",
-                  fontSize: 16,
-                  background:
-                    "white",
-                }}
-              >
-                {players.map(
-                  (player) => (
-                    <option
-                      key={player.id}
-                      value={player.id}
-                    >
-                      {displayPlayerName(
-                        player
-                      )}
-                    </option>
-                  )
-                )}
-              </select>
-            </div>
+    <div className="head-to-head-vs">
+      VS
+    </div>
 
-            {selectedPlayerId ===
-            comparisonPlayerId ? (
-              <p
-                style={{
-                  marginTop: 18,
-                  opacity: 0.65,
-                }}
-              >
-                Seleziona due giocatori
-                diversi.
-              </p>
-            ) : (
-              <div
-                style={{
-                  marginTop: 20,
-                  textAlign: "center",
-                }}
-              >
-                <h3>
-                  {comparisonStats.matchesPlayed}{" "}
-                  confronti
-                </h3>
+    <select
+      value={comparisonPlayerId}
+      onChange={(event) =>
+        setComparisonPlayerId(
+          event.target.value
+        )
+      }
+    >
+      {players.map((player) => (
+        <option
+          key={player.id}
+          value={player.id}
+        >
+          {displayPlayerName(player)}
+        </option>
+      ))}
+    </select>
 
-                <p
-                  style={{
-                    fontSize: 20,
-                    fontWeight: 800,
-                    marginTop: 8,
-                  }}
-                >
-                  {selectedName}{" "}
-                  {comparisonStats.playerAWins}
-                  {" – "}
-                  {
-                    comparisonStats.playerBWins
-                  }{" "}
-                  {comparisonName}
-                </p>
-              </div>
-            )}
-          </section>
+  </div>
 
-          <section
-            className="players-card"
-            style={{ marginTop: 20 }}
-          >
-            <div className="section-heading">
-              <div>
-                <p className="eyebrow">
-                  🤝 INSIEME
-                </p>
+  {selectedPlayerId === comparisonPlayerId ? (
+    <p className="head-to-head-empty">
+      Seleziona due giocatori diversi.
+    </p>
+  ) : (
+    <div className="head-to-head-result">
 
-                <h2>
-                  Quando giocano in coppia
+      <p className="head-to-head-label">
+        {comparisonStats.matchesPlayed} CONFRONTI
+      </p>
+
+      <div className="head-to-head-score">
+
+        <div>
+          <strong>
+            {comparisonStats.playerAWins}
+          </strong>
+
+          <span>
+            {selectedName}
+          </span>
+        </div>
+
+        <div className="head-to-head-dash">
+          —
+        </div>
+
+        <div>
+          <strong>
+            {comparisonStats.playerBWins}
+          </strong>
+
+          <span>
+            {comparisonName}
+          </span>
+        </div>
+
+      </div>
+
+    </div>
+  )}
+</section>
+
+<section
+  className="players-card"
+  style={{ marginTop: 20 }}
+>
+  <div className="section-heading">
+    <div>
+      <p className="eyebrow">
+        🤝 INSIEME
+      </p>
+
+      <h2>
+        Quando giocano in coppia
                 </h2>
               </div>
             </div>

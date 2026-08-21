@@ -1,4 +1,8 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap");
+
+/* =========================================================
+   BASE
+   ========================================================= */
 
 :root {
   --background: #f4f3ef;
@@ -26,9 +30,81 @@ body {
   font-family: "DM Sans", sans-serif;
 }
 
-button {
+button,
+input {
   font: inherit;
 }
+
+a {
+  color: inherit;
+}
+
+
+/* =========================================================
+   TIPOGRAFIA GENERALE
+   ========================================================= */
+
+h1,
+h2,
+h3 {
+  font-family: "Space Grotesk", sans-serif;
+  letter-spacing: -0.04em;
+}
+
+.eyebrow {
+  margin: 0 0 16px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+}
+
+
+/* =========================================================
+   BOTTONI GENERALI
+   ========================================================= */
+
+.primary-button,
+.secondary-button {
+  width: 100%;
+  min-height: 56px;
+  border-radius: 14px;
+  cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    opacity 0.2s ease;
+}
+
+.primary-button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  border: none;
+  background: var(--foreground);
+  color: white;
+  font-weight: 600;
+}
+
+.primary-button span {
+  font-size: 22px;
+}
+
+.secondary-button {
+  border: 1px solid var(--border);
+  background: white;
+  color: var(--foreground);
+  font-weight: 500;
+}
+
+.primary-button:hover,
+.secondary-button:hover {
+  transform: translateY(-2px);
+}
+
+
+/* =========================================================
+   VECCHIA HOME / COMPONENTI GENERALI
+   ========================================================= */
 
 .home {
   min-height: 100vh;
@@ -60,28 +136,10 @@ button {
   margin-bottom: 32px;
 }
 
-.eyebrow {
-  margin: 0 0 16px;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-}
-
-h1,
-h2 {
-  font-family: "Space Grotesk", sans-serif;
-  letter-spacing: -0.04em;
-}
-
-h1 {
+.home-card h1 {
   margin: 0;
   font-size: clamp(42px, 10vw, 64px);
   line-height: 0.98;
-}
-
-h2 {
-  margin: 0 0 20px;
-  font-size: 36px;
 }
 
 .intro {
@@ -95,42 +153,6 @@ h2 {
   display: flex;
   flex-direction: column;
   gap: 12px;
-}
-
-.primary-button,
-.secondary-button {
-  width: 100%;
-  min-height: 56px;
-  border-radius: 14px;
-  cursor: pointer;
-  transition: transform 0.2s ease, opacity 0.2s ease;
-}
-
-.primary-button {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 20px;
-  border: none;
-  background: var(--foreground);
-  color: white;
-  font-weight: 600;
-}
-
-.primary-button span {
-  font-size: 22px;
-}
-
-.secondary-button {
-  border: 1px solid var(--border);
-  background: white;
-  color: var(--foreground);
-  font-weight: 500;
-}
-
-.primary-button:hover,
-.secondary-button:hover {
-  transform: translateY(-2px);
 }
 
 .season-info {
@@ -197,26 +219,484 @@ h2 {
   cursor: pointer;
 }
 
-@media (max-width: 600px) {
-  .home {
-    padding: 16px;
-  }
 
-  .home-card {
-    padding: 36px 24px;
-    border-radius: 22px;
-  }
+/* =========================================================
+   HOME — PADEL ON TUESDAY
+   ========================================================= */
 
-  h1 {
-    font-size: 46px;
-  }
+.home-page {
+  min-height: 100vh;
+  background: var(--background);
+  color: var(--foreground);
+}
 
-  .info-card {
-    padding: 32px 24px;
-  }
-}/* =========================
+
+/* ---------------------------------------------------------
+   HERO
+   --------------------------------------------------------- */
+
+.home-hero {
+  min-height: 78vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 24px;
+  background: var(--foreground);
+  color: white;
+  overflow: hidden;
+}
+
+.home-hero-inner {
+  position: relative;
+  width: 100%;
+  max-width: 1200px;
+}
+
+.home-hero .eyebrow {
+  margin-bottom: 24px;
+  color: var(--accent);
+}
+
+.home-hero h1 {
+  margin: 0;
+  font-size: clamp(76px, 14vw, 190px);
+  line-height: 0.82;
+  letter-spacing: -0.07em;
+  font-weight: 700;
+}
+
+.home-hero-season {
+  margin: 40px 0 0;
+  color: #a9a9a9;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+}
+
+.home-hero-ball {
+  position: absolute;
+  right: 4%;
+  bottom: -30px;
+  font-size: clamp(100px, 16vw, 220px);
+  transform: rotate(-18deg);
+  opacity: 0.9;
+}
+
+
+/* ---------------------------------------------------------
+   CALENDARIO HERO
+   --------------------------------------------------------- */
+
+.home-calendar-hero {
+  position: relative;
+  z-index: 2;
+  margin-bottom: 72px;
+  max-width: 100%;
+}
+
+.home-calendar-row {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+
+.home-calendar-hero-month {
+  flex-shrink: 0;
+  color: rgba(255, 255, 255, 0.55);
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: capitalize;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.home-calendar {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  padding: 0;
+}
+
+.home-calendar-day {
+  flex: 0 0 42px;
+  width: 42px;
+  height: 54px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: white;
+  opacity: 0.38;
+}
+
+.home-calendar-weekday {
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.home-calendar-number {
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.home-calendar-day.today {
+  flex-basis: 54px;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--foreground);
+  opacity: 1;
+}
+
+.home-calendar-day.today .home-calendar-weekday {
+  color: rgba(23, 23, 23, 0.55);
+}
+
+.home-calendar-day.today .home-calendar-number {
+  font-size: 20px;
+}
+
+
+/* ---------------------------------------------------------
+   HOME SEZIONI
+   --------------------------------------------------------- */
+
+.home-section {
+  width: 100%;
+  min-height: 72vh;
+  display: flex;
+  align-items: center;
+  padding: 100px 24px;
+}
+
+.home-section-inner {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.home-section-label {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 36px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+}
+
+.home-section-label span:first-child {
+  color: var(--muted);
+}
+
+.home-section h2 {
+  max-width: 900px;
+  margin: 0;
+  font-size: clamp(60px, 10vw, 130px);
+  line-height: 0.86;
+  letter-spacing: -0.065em;
+}
+
+.home-section-lead {
+  margin: 42px 0 0;
+  max-width: 520px;
+  font-size: clamp(18px, 2vw, 24px);
+  line-height: 1.45;
+}
+
+
+/* ---------------------------------------------------------
+   01 — NUOVA GIORNATA
+   --------------------------------------------------------- */
+
+.home-section-matchday {
+  background: var(--accent);
+  color: var(--foreground);
+}
+
+.home-section-matchday .home-section-label {
+  color: var(--foreground);
+}
+
+.home-section-matchday .home-section-label span:first-child {
+  opacity: 0.5;
+}
+
+.home-matchday-content {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 40px;
+}
+
+.home-matchday-kicker {
+  margin: 0 0 18px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+}
+
+.home-matchday-content h2 {
+  margin: 0;
+  font-size: clamp(56px, 9vw, 110px);
+  line-height: 0.84;
+  letter-spacing: -0.065em;
+}
+
+
+/* ---------------------------------------------------------
+   02 — LA CORSA AL TITOLO
+   --------------------------------------------------------- */
+
+.home-section-title {
+  background: var(--foreground);
+  color: white;
+}
+
+.home-section-title .home-section-label {
+  color: var(--accent);
+}
+
+.home-section-title .home-section-label span:first-child {
+  color: #777;
+}
+
+.home-section-title .home-section-lead {
+  color: #a9a9a9;
+}
+
+
+/* ---------------------------------------------------------
+   CLASSIFICA GRAFICA
+   --------------------------------------------------------- */
+
+.home-ranking-placeholder {
+  margin-top: 64px;
+  border-top: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.home-ranking-main {
+  display: grid;
+  grid-template-columns: 70px 1fr auto;
+  align-items: center;
+  gap: 20px;
+  min-height: 150px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.home-ranking-main span {
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.home-ranking-main strong {
+  font-family: "Space Grotesk", sans-serif;
+  font-size: clamp(42px, 7vw, 80px);
+  letter-spacing: -0.05em;
+}
+
+.home-ranking-main b {
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 36px;
+  font-weight: 500;
+  color: #777;
+}
+
+.home-ranking-secondary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.home-ranking-secondary > div {
+  min-height: 110px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  border-right: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.home-ranking-secondary > div:last-child {
+  border-right: none;
+}
+
+.home-ranking-secondary span {
+  color: #777;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.home-ranking-secondary strong {
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 28px;
+}
+
+
+/* ---------------------------------------------------------
+   03 — MOMENTI MEMORABILI
+   --------------------------------------------------------- */
+
+.home-section-moments {
+  min-height: 65vh;
+  background: #e9e7e1;
+}
+
+.home-section-moments .home-section-lead {
+  color: var(--muted);
+}
+
+.home-moment-placeholder {
+  max-width: 760px;
+  margin-top: 64px;
+  padding-top: 28px;
+  border-top: 1px solid var(--border);
+}
+
+.home-moment-date {
+  margin: 0 0 28px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+}
+
+.home-moment-text {
+  margin: 0;
+  max-width: 700px;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: clamp(26px, 4vw, 48px);
+  line-height: 1.08;
+  letter-spacing: -0.04em;
+}
+
+
+/* ---------------------------------------------------------
+   LINK / AZIONI DELLE SEZIONI
+   --------------------------------------------------------- */
+
+.home-section-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 360px;
+  margin-top: 48px;
+  padding: 18px 0;
+  border: none;
+  border-bottom: 2px solid currentColor;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.home-section-action span:last-child {
+  font-size: 24px;
+  transition: transform 0.2s ease;
+}
+
+.home-section-action:hover span:last-child {
+  transform: translateX(6px);
+}
+
+
+/* ---------------------------------------------------------
+   GIOCATORI / CLASSIFICA — PARTE BASSA
+   --------------------------------------------------------- */
+
+.home-lower {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  border-top: 1px solid var(--border);
+}
+
+.home-lower-card {
+  position: relative;
+  min-height: 260px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 32px;
+  background: var(--card);
+  color: var(--foreground);
+  text-decoration: none;
+  transition: background 0.2s ease;
+}
+
+.home-lower-card + .home-lower-card {
+  border-left: 1px solid var(--border);
+}
+
+.home-lower-card:hover {
+  background: var(--accent);
+}
+
+.home-lower-number {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+}
+
+.home-lower-card p {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+}
+
+.home-lower-card h3 {
+  margin: 0;
+  font-size: clamp(36px, 5vw, 60px);
+  line-height: 0.9;
+  letter-spacing: -0.05em;
+}
+
+.home-lower-arrow {
+  position: absolute;
+  right: 32px;
+  bottom: 28px;
+  font-size: 28px;
+}
+
+
+/* ---------------------------------------------------------
+   FOOTER HOME
+   --------------------------------------------------------- */
+
+.home-footer {
+  display: flex;
+  justify-content: space-between;
+  padding: 28px 32px;
+  background: var(--foreground);
+  color: #888;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+}
+
+
+/* =========================================================
    DASHBOARD
-========================= */
+   ========================================================= */
 
 .dashboard {
   min-height: 100vh;
@@ -286,10 +766,45 @@ h2 {
 
 .dashboard-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+/* =========================================================
+   STATISTICHE — NUMERI
+   ========================================================= */
+
+.dashboard-grid .menu-card {
+  min-height: 120px;
+  padding: 22px;
+  align-items: flex-end;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 16px;
 }
 
+.dashboard-grid .menu-card h3 {
+  margin: 0 0 6px;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 28px;
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.dashboard-grid .menu-card p {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.dashboard-grid .menu-card .menu-icon {
+  display: none;
+}
+
+.dashboard-grid .menu-card .card-arrow {
+  display: none;
+}
 .menu-card {
   position: relative;
   display: flex;
@@ -326,7 +841,6 @@ h2 {
 
 .menu-card h3 {
   margin: 4px 0 8px;
-  font-family: "Space Grotesk", sans-serif;
   font-size: 22px;
   letter-spacing: -0.03em;
 }
@@ -384,7 +898,6 @@ h2 {
 
 .empty-ranking h3 {
   margin: 0 0 8px;
-  font-family: "Space Grotesk", sans-serif;
 }
 
 .empty-ranking p {
@@ -392,45 +905,10 @@ h2 {
   color: var(--muted);
 }
 
-@media (max-width: 700px) {
-  .dashboard {
-    padding: 32px 16px 60px;
-  }
 
-  .dashboard-header {
-    margin-bottom: 32px;
-  }
-
-  .dashboard-header h1 {
-    font-size: 38px;
-  }
-
-  .welcome-card {
-    align-items: flex-start;
-    flex-direction: column;
-    padding: 28px;
-  }
-
-  .welcome-card .primary-button {
-    width: 100%;
-  }
-
-  .dashboard-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .menu-card {
-    min-height: 140px;
-  }
-
-  .section-heading {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 12px;
-  }
-}/* =========================
+/* =========================================================
    GIOCATORI
-========================= */
+   ========================================================= */
 
 .players-page {
   min-height: 100vh;
@@ -457,10 +935,10 @@ h2 {
 }
 
 .players-card {
-  padding: 36px;
-  background: white;
+  padding: 32px;
+  background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 24px;
+  border-radius: 20px;
 }
 
 .players-count {
@@ -488,7 +966,6 @@ h2 {
   outline: none;
   background: var(--background);
   color: var(--foreground);
-  font: inherit;
 }
 
 .add-player input:focus {
@@ -511,7 +988,6 @@ h2 {
 
 .empty-players h3 {
   margin: 0 0 8px;
-  font-family: "Space Grotesk", sans-serif;
 }
 
 .empty-players p {
@@ -551,7 +1027,70 @@ h2 {
   font-size: 12px;
   font-weight: 700;
 }
+/* =========================================================
+   CLASSIFICA — CORSA AL TITOLO
+   ========================================================= */
 
+.player-row {
+  min-height: 72px;
+  padding: 10px 16px;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+  transition:
+    background 0.2s ease,
+    padding 0.2s ease;
+}
+
+.player-row:hover {
+  background: rgba(255, 255, 255, 0.65);
+}
+
+.player-row:first-child {
+  min-height: 96px;
+  padding-top: 14px;
+  padding-bottom: 14px;
+  border-bottom: 2px solid var(--foreground);
+}
+
+.player-row:first-child .player-number {
+  width: 48px;
+  height: 48px;
+  background: var(--accent);
+  border-radius: 50%;
+  color: var(--foreground);
+  font-size: 14px;
+}
+
+.player-row:first-child strong {
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 22px;
+  letter-spacing: -0.03em;
+}
+
+.player-row strong {
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 17px;
+  letter-spacing: -0.02em;
+}
+
+.player-row:first-child > div:last-child strong {
+  font-size: 30px;
+}
+
+.player-row > div:last-child {
+  min-width: 70px;
+}
+
+.player-row > div:last-child div {
+  margin-top: 2px !important;
+}
+
+.player-row:not(:first-child) .player-number {
+  background: transparent;
+  border: none;
+}
 .player-row strong {
   flex: 1;
   font-family: "Space Grotesk", sans-serif;
@@ -573,7 +1112,207 @@ h2 {
   color: var(--foreground);
 }
 
-@media (max-width: 600px) {
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 700px) {
+
+  /* HOME HERO */
+
+  .home-hero {
+    min-height: 82vh;
+    align-items: flex-end;
+    padding: 48px 20px;
+  }
+
+  .home-hero h1 {
+    font-size: clamp(76px, 24vw, 130px);
+  }
+
+  .home-hero-ball {
+    right: -8px;
+    top: 20%;
+    bottom: auto;
+    font-size: 110px;
+  }
+
+  .home-hero-season {
+    margin-top: 32px;
+  }
+
+
+  /* CALENDARIO */
+
+  .home-calendar-hero {
+    margin-bottom: 56px;
+  }
+
+  .home-calendar-row {
+    gap: 14px;
+  }
+
+  .home-calendar-hero-month {
+    font-size: 11px;
+  }
+
+  .home-calendar {
+    gap: 8px;
+  }
+
+  .home-calendar-day {
+    flex-basis: 38px;
+    width: 38px;
+  }
+
+  .home-calendar-day.today {
+    flex-basis: 48px;
+    width: 48px;
+    height: 48px;
+  }
+
+  .home-calendar-number {
+    font-size: 17px;
+  }
+
+  .home-calendar-day.today .home-calendar-number {
+    font-size: 19px;
+  }
+
+
+  /* HOME SEZIONI */
+
+  .home-section {
+    min-height: 70vh;
+    padding: 72px 20px;
+  }
+
+  .home-section h2 {
+    font-size: clamp(58px, 18vw, 100px);
+  }
+
+  .home-section-lead {
+    margin-top: 32px;
+    font-size: 19px;
+  }
+
+  .home-section-action {
+    margin-top: 40px;
+  }
+
+
+  /* NUOVA GIORNATA */
+
+  .home-matchday-content {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 32px;
+  }
+
+  .home-matchday-content .home-section-action {
+    width: 100%;
+    max-width: none;
+  }
+
+
+  /* CLASSIFICA */
+
+  .home-ranking-main {
+    grid-template-columns: 42px 1fr auto;
+    gap: 12px;
+    min-height: 120px;
+  }
+
+  .home-ranking-main strong {
+    font-size: 42px;
+  }
+
+  .home-ranking-secondary > div {
+    min-height: 90px;
+    gap: 8px;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+  }
+
+  .home-ranking-secondary strong {
+    font-size: 22px;
+  }
+
+
+  /* MOMENTI */
+
+  .home-moment-placeholder {
+    margin-top: 48px;
+  }
+
+
+  /* LOWER */
+
+  .home-lower {
+    grid-template-columns: 1fr;
+  }
+
+  .home-lower-card {
+    min-height: 220px;
+    padding: 28px 20px;
+  }
+
+  .home-lower-card + .home-lower-card {
+    border-left: none;
+    border-top: 1px solid var(--border);
+  }
+
+
+  /* FOOTER */
+
+  .home-footer {
+    padding: 24px 20px;
+  }
+
+
+  /* DASHBOARD */
+
+  .dashboard {
+    padding: 32px 16px 60px;
+  }
+
+  .dashboard-header {
+    margin-bottom: 32px;
+  }
+
+  .dashboard-header h1 {
+    font-size: 38px;
+  }
+
+  .welcome-card {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 28px;
+  }
+
+  .welcome-card .primary-button {
+    width: 100%;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .menu-card {
+    min-height: 140px;
+  }
+
+  .section-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+
+  /* GIOCATORI */
+
   .players-page {
     padding: 32px 16px 60px;
   }
@@ -590,12 +1329,6 @@ h2 {
     padding: 24px;
   }
 
-  .section-heading {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 12px;
-  }
-
   .add-player {
     flex-direction: column;
   }
@@ -603,4 +1336,105 @@ h2 {
   .add-button {
     width: 100%;
   }
+}
+
+
+@media (max-width: 600px) {
+
+  .home {
+    padding: 16px;
+  }
+
+  .home-card {
+    padding: 36px 24px;
+    border-radius: 22px;
+  }
+
+  .home-card h1 {
+    font-size: 46px;
+  }
+
+  .info-card {
+    padding: 32px 24px;
+  }
+}
+/* =========================================================
+   TESTA A TESTA
+   ========================================================= */
+
+.head-to-head-selectors {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 12px;
+  align-items: center;
+  margin-top: 28px;
+}
+
+.head-to-head-selectors select {
+  width: 100%;
+  padding: 13px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
+  color: var(--foreground);
+  font: inherit;
+  font-size: 15px;
+}
+
+.head-to-head-vs {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  opacity: 0.45;
+}
+
+.head-to-head-result {
+  margin-top: 32px;
+  padding-top: 28px;
+  border-top: 1px solid var(--border);
+}
+
+.head-to-head-label {
+  margin: 0 0 18px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  opacity: 0.55;
+  text-align: center;
+}
+
+.head-to-head-score {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 16px;
+  align-items: center;
+  text-align: center;
+}
+
+.head-to-head-score > div {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.head-to-head-score strong {
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 42px;
+  line-height: 1;
+  letter-spacing: -0.05em;
+}
+
+.head-to-head-score span {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.head-to-head-dash {
+  font-size: 20px;
+  opacity: 0.35;
+}
+
+.head-to-head-empty {
+  margin-top: 24px;
+  color: var(--muted);
 }

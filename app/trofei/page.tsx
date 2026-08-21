@@ -37,6 +37,7 @@ type MatchSet = {
 
 type PlayerResult = {
   playerId: string;
+  matchId: string;
   matchDate: string;
   result: "win" | "loss" | "draw";
   setsWon: number;
@@ -67,9 +68,16 @@ function matchWinner(sets: MatchSet[]) {
   let teamBWins = 0;
 
   for (const set of sets) {
-    if (set.team1_score > set.team2_score) {
+    const scoreA = Number(set.team1_score);
+    const scoreB = Number(set.team2_score);
+
+    if (Number.isNaN(scoreA) || Number.isNaN(scoreB)) {
+      continue;
+    }
+
+    if (scoreA > scoreB) {
       teamAWins++;
-    } else if (set.team2_score > set.team1_score) {
+    } else if (scoreB > scoreA) {
       teamBWins++;
     }
   }
@@ -93,6 +101,20 @@ function formatMonth(date: string) {
   }
 
   return parsed.toLocaleDateString("it-IT", {
+    month: "long",
+    year: "numeric",
+  });
+}
+
+function formatDate(date: string) {
+  const parsed = new Date(`${date}T00:00:00`);
+
+  if (Number.isNaN(parsed.getTime())) {
+    return date;
+  }
+
+  return parsed.toLocaleDateString("it-IT", {
+    day: "numeric",
     month: "long",
     year: "numeric",
   });
@@ -126,9 +148,7 @@ export default function Trofei() {
       ] = await Promise.all([
         supabase
           .from("players")
-          .select(
-            "id, name, first_name, last_name"
-          ),
+          .select("id, name, first_name, last_name"),
 
         supabase
           .from("matchdays")
@@ -139,16 +159,12 @@ export default function Trofei() {
 
         supabase
           .from("matches")
-          .select(
-            "id, matchday_id, court"
-          )
+          .select("id, matchday_id, court")
           .order("court"),
 
         supabase
           .from("match_players")
-          .select(
-            "match_id, player_id, team"
-          ),
+          .select("match_id, player_id, team"),
 
         supabase
           .from("match_sets")
@@ -181,15 +197,10 @@ export default function Trofei() {
       setPlayers(playersResult.data ?? []);
       setMatchdays(matchdaysResult.data ?? []);
       setMatches(matchesResult.data ?? []);
-      setMatchPlayers(
-        matchPlayersResult.data ?? []
-      );
+      setMatchPlayers(matchPlayersResult.data ?? []);
       setSets(setsResult.data ?? []);
     } catch (error) {
-      console.error(
-        "Errore caricamento trofei:",
-        error
-      );
+      console.error("Errore caricamento trofei:", error);
 
       setMessage(
         error instanceof Error
@@ -205,10 +216,7 @@ export default function Trofei() {
     const map = new Map<string, string>();
 
     for (const player of players) {
-      map.set(
-        player.id,
-        displayPlayerName(player)
-      );
+      map.set(player.id, displayPlayerName(player));
     }
 
     return map;
@@ -223,47 +231,59 @@ export default function Trofei() {
       );
 
       if (matchday) {
-        map.set(
-          match.id,
-          matchday.match_date
-        );
+        map.set(match.id, matchday.match_date);
       }
     }
 
     return map;
   }, [matches, matchdays]);
 
+  /*
+   * ============================================================
+   * RISULTATO DI OGNI GIOCATORE IN OGNI PARTITA
+   * ============================================================
+   */
+
   const playerResults = useMemo(() => {
     const results: PlayerResult[] = [];
 
     for (const match of matches) {
-      const matchPlayersForMatch =
-        matchPlayers.filter(
-          (item) =>
-            item.match_id === match.id
-        );
+      const playersForMatch = matchPlayers.filter(
+        (item) => item.match_id === match.id
+      );
+
+      if (playersForMatch.length !== 4) {
+        continue;
+      }
+
+      const teamA = playersForMatch.filter(
+        (item) => item.team === "A"
+      );
+
+      const teamB = playersForMatch.filter(
+        (item) => item.team === "B"
+      );
+
+      if (teamA.length !== 2 || teamB.length !== 2) {
+        continue;
+      }
 
       const matchSets = sets
-        .filter(
-          (set) =>
-            set.match_id === match.id
-        )
-        .sort(
-          (a, b) =>
-            a.set_number - b.set_number
-        );
+        .filter((set) => set.match_id === match.id)
+        .sort((a, b) => a.set_number - b.set_number);
 
-      const winner =
-        matchWinner(matchSets);
+      if (matchSets.length === 0) {
+        continue;
+      }
 
-      const matchDate =
-        matchDateMap.get(match.id);
+      const winner = matchWinner(matchSets);
+      const matchDate = matchDateMap.get(match.id);
 
       if (!matchDate) {
         continue;
       }
 
-      for (const player of matchPlayersForMatch) {
+      for (const player of playersForMatch) {
         let setsWon = 0;
         let setsLost = 0;
         let gamesWon = 0;
@@ -272,24 +292,27 @@ export default function Trofei() {
         for (const set of matchSets) {
           const playerScore =
             player.team === "A"
-              ? set.team1_score
-              : set.team2_score;
+              ? Number(set.team1_score)
+              : Number(set.team2_score);
 
           const opponentScore =
             player.team === "A"
-              ? set.team2_score
-              : set.team1_score;
+              ? Number(set.team2_score)
+              : Number(set.team1_score);
+
+          if (
+            Number.isNaN(playerScore) ||
+            Number.isNaN(opponentScore)
+          ) {
+            continue;
+          }
 
           gamesWon += playerScore;
           gamesLost += opponentScore;
 
-          if (
-            playerScore > opponentScore
-          ) {
+          if (playerScore > opponentScore) {
             setsWon++;
-          } else if (
-            opponentScore > playerScore
-          ) {
+          } else if (opponentScore > playerScore) {
             setsLost++;
           }
         }
@@ -298,9 +321,7 @@ export default function Trofei() {
 
         if (!winner) {
           result = "draw";
-        } else if (
-          winner === player.team
-        ) {
+        } else if (winner === player.team) {
           result = "win";
         } else {
           result = "loss";
@@ -308,6 +329,7 @@ export default function Trofei() {
 
         results.push({
           playerId: player.player_id,
+          matchId: match.id,
           matchDate,
           result,
           setsWon,
@@ -319,12 +341,7 @@ export default function Trofei() {
     }
 
     return results;
-  }, [
-    matches,
-    matchPlayers,
-    sets,
-    matchDateMap,
-  ]);
+  }, [matches, matchPlayers, sets, matchDateMap]);
 
   const trophies = useMemo(() => {
     const result: Trophy[] = [];
@@ -333,305 +350,716 @@ export default function Trofei() {
       return result;
     }
 
+    function names(ids: string[]) {
+      return ids
+        .map((id) => playerMap.get(id) || "Giocatore")
+        .join(" · ");
+    }
+
     /*
-     * 🔥 LA STRISCIA
+     * ============================================================
+     * 🎰 IL COLPO GROSSO
      *
-     * Cerchiamo la miglior sequenza consecutiva
-     * di vittorie per ciascun giocatore.
+     * La vittoria con il maggiore margine complessivo di game.
+     * In caso di pari merito, il trofeo viene condiviso.
+     * ============================================================
      */
 
-    let streakWinnerId = "";
-    let bestStreak = 0;
+    let bestGameMargin = -1;
+    let colpoGrossoPlayers: string[] = [];
+    let colpoGrossoDate = "";
+
+    for (const match of matches) {
+      const matchResults = playerResults.filter(
+        (item) => item.matchId === match.id
+      );
+
+      if (matchResults.length !== 4) {
+        continue;
+      }
+
+      const winnerResult = matchResults.find(
+        (item) => item.result === "win"
+      );
+
+      if (!winnerResult) {
+        continue;
+      }
+
+      const margin =
+        winnerResult.gamesWon - winnerResult.gamesLost;
+
+      if (margin > bestGameMargin) {
+        bestGameMargin = margin;
+
+        colpoGrossoPlayers = matchResults
+          .filter((item) => item.result === "win")
+          .map((item) => item.playerId);
+
+        colpoGrossoDate = winnerResult.matchDate;
+      } else if (margin === bestGameMargin) {
+        colpoGrossoPlayers = Array.from(
+          new Set([
+            ...colpoGrossoPlayers,
+            ...matchResults
+              .filter((item) => item.result === "win")
+              .map((item) => item.playerId),
+          ])
+        );
+      }
+    }
+
+    if (
+      bestGameMargin >= 0 &&
+      colpoGrossoPlayers.length > 0
+    ) {
+      result.push({
+        icon: "🎰",
+        title: "Il Colpo Grosso",
+        description:
+          "La vittoria con il margine più largo",
+        playerName: names(colpoGrossoPlayers),
+        value: `+${bestGameMargin} game`,
+        detail: colpoGrossoDate
+          ? formatDate(colpoGrossoDate)
+          : undefined,
+      });
+    }
+
+    /*
+     * ============================================================
+     * 🧱 IL MURO
+     *
+     * Più vittorie ottenute al tie-break.
+     *
+     * Un set 7-6 è considerato concluso al tie-break.
+     * ============================================================
+     */
+
+    const tieBreakWins = new Map<string, number>();
 
     for (const player of players) {
-      const resultsForPlayer =
-        playerResults
-          .filter(
-            (item) =>
-              item.playerId === player.id
-          )
-          .sort((a, b) =>
-            a.matchDate.localeCompare(
-              b.matchDate
-            )
+      tieBreakWins.set(player.id, 0);
+    }
+
+    for (const match of matches) {
+      const matchResults = playerResults.filter(
+        (item) => item.matchId === match.id
+      );
+
+      const winningPlayers = matchResults
+        .filter((item) => item.result === "win")
+        .map((item) => item.playerId);
+
+      if (winningPlayers.length !== 2) {
+        continue;
+      }
+
+      const matchSets = sets.filter(
+        (set) => set.match_id === match.id
+      );
+
+      const hadTieBreak = matchSets.some((set) => {
+        const scoreA = Number(set.team1_score);
+        const scoreB = Number(set.team2_score);
+
+        return (
+          (scoreA === 7 && scoreB === 6) ||
+          (scoreA === 6 && scoreB === 7)
+        );
+      });
+
+      if (hadTieBreak) {
+        for (const playerId of winningPlayers) {
+          tieBreakWins.set(
+            playerId,
+            (tieBreakWins.get(playerId) || 0) + 1
           );
-
-      let currentStreak = 0;
-
-      for (const item of resultsForPlayer) {
-        if (item.result === "win") {
-          currentStreak++;
-
-          if (currentStreak > bestStreak) {
-            bestStreak = currentStreak;
-            streakWinnerId = player.id;
-          }
-        } else {
-          currentStreak = 0;
         }
       }
     }
 
-    if (bestStreak > 0) {
+    const maxTieBreakWins = Math.max(
+      0,
+      ...Array.from(tieBreakWins.values())
+    );
+
+    if (maxTieBreakWins > 0) {
+      const winners = Array.from(tieBreakWins.entries())
+        .filter(([, value]) => value === maxTieBreakWins)
+        .map(([id]) => id);
+
+      result.push({
+        icon: "🧱",
+        title: "Il Muro",
+        description:
+          "Più vittorie ottenute al tie-break",
+        playerName: names(winners),
+        value: `${maxTieBreakWins} ${
+          maxTieBreakWins === 1
+            ? "vittoria"
+            : "vittorie"
+        }`,
+      });
+    }
+
+    /*
+     * ============================================================
+     * 🔥 LA STRISCIA
+     *
+     * Più vittorie consecutive.
+     * Minimo: 2.
+     * ============================================================
+     */
+
+    let bestStreak = 0;
+    const streakWinners: string[] = [];
+
+    for (const player of players) {
+      const playerResultsSorted = playerResults
+        .filter((item) => item.playerId === player.id)
+        .sort((a, b) =>
+          a.matchDate.localeCompare(b.matchDate)
+        );
+
+      let currentStreak = 0;
+      let playerBestStreak = 0;
+
+      for (const item of playerResultsSorted) {
+        if (item.result === "win") {
+          currentStreak++;
+          playerBestStreak = Math.max(
+            playerBestStreak,
+            currentStreak
+          );
+        } else {
+          currentStreak = 0;
+        }
+      }
+
+      if (playerBestStreak > bestStreak) {
+        bestStreak = playerBestStreak;
+        streakWinners.length = 0;
+        streakWinners.push(player.id);
+      } else if (
+        playerBestStreak === bestStreak &&
+        playerBestStreak >= 2
+      ) {
+        streakWinners.push(player.id);
+      }
+    }
+
+    if (
+      bestStreak >= 2 &&
+      streakWinners.length > 0
+    ) {
       result.push({
         icon: "🔥",
         title: "La Striscia",
         description:
-          "Maggior numero di vittorie consecutive",
-        playerName:
-          playerMap.get(streakWinnerId) ||
-          "Giocatore",
+          "La più lunga sequenza di vittorie consecutive",
+        playerName: names(
+          Array.from(new Set(streakWinners))
+        ),
         value: `${bestStreak} vittorie`,
       });
     }
 
     /*
-     * 👑 IL DOMINATORE
-     *
-     * Maggior numero di vittorie complessive.
-     */
-
-    let dominantPlayerId = "";
-    let dominantWins = 0;
-
-    for (const player of players) {
-      const wins =
-        playerResults.filter(
-          (item) =>
-            item.playerId === player.id &&
-            item.result === "win"
-        ).length;
-
-      if (wins > dominantWins) {
-        dominantWins = wins;
-        dominantPlayerId = player.id;
-      }
-    }
-
-    if (dominantWins > 0) {
-      result.push({
-        icon: "👑",
-        title: "Il Dominatore",
-        description:
-          "Maggior numero di vittorie complessive",
-        playerName:
-          playerMap.get(
-            dominantPlayerId
-          ) || "Giocatore",
-        value: `${dominantWins} vittorie`,
-      });
-    }
-
-    /*
-     * 🎯 IL PIÙ PRESENTE
-     *
-     * Maggior numero di partite giocate.
-     */
-
-    let presentPlayerId = "";
-    let mostPlayed = 0;
-
-    for (const player of players) {
-      const played =
-        playerResults.filter(
-          (item) =>
-            item.playerId === player.id
-        ).length;
-
-      if (played > mostPlayed) {
-        mostPlayed = played;
-        presentPlayerId = player.id;
-      }
-    }
-
-    if (mostPlayed > 0) {
-      result.push({
-        icon: "🎯",
-        title: "Il più presente",
-        description:
-          "Maggior numero di partite giocate",
-        playerName:
-          playerMap.get(
-            presentPlayerId
-          ) || "Giocatore",
-        value: `${mostPlayed} partite`,
-      });
-    }
-
-    /*
+     * ============================================================
      * ⭐ GIOCATORE DEL MESE
-     *
-     * Consideriamo il mese dell'ultima giornata
-     * disputata.
-     *
-     * Criteri:
-     * 1. differenza vittorie - sconfitte
-     * 2. differenza set
-     * 3. differenza game
+     * ============================================================
      */
 
-    if (matchdays.length > 0) {
-      const latestDate =
-        matchdays
-          .map((day) => day.match_date)
+    const months = Array.from(
+      new Set(
+        playerResults.map((item) =>
+          item.matchDate.slice(0, 7)
+        )
+      )
+    ).sort();
+
+    const latestMonth = months.at(-1);
+
+    if (latestMonth) {
+      const monthlyWins = new Map<string, number>();
+
+      for (const player of players) {
+        monthlyWins.set(player.id, 0);
+      }
+
+      for (const item of playerResults) {
+        if (
+          item.matchDate.slice(0, 7) === latestMonth &&
+          item.result === "win"
+        ) {
+          monthlyWins.set(
+            item.playerId,
+            (monthlyWins.get(item.playerId) || 0) + 1
+          );
+        }
+      }
+
+      const maxMonthlyWins = Math.max(
+        0,
+        ...Array.from(monthlyWins.values())
+      );
+
+      if (maxMonthlyWins > 0) {
+        const winners = Array.from(
+          monthlyWins.entries()
+        )
+          .filter(
+            ([, value]) => value === maxMonthlyWins
+          )
+          .map(([id]) => id);
+
+        const latestDate = playerResults
+          .filter(
+            (item) =>
+              item.matchDate.slice(0, 7) ===
+              latestMonth
+          )
+          .map((item) => item.matchDate)
           .sort()
           .at(-1);
 
-      if (latestDate) {
-        const latestMonth =
-          latestDate.slice(0, 7);
-
-        const monthlyResults =
-          playerResults.filter(
-            (item) =>
-              item.matchDate.slice(
-                0,
-                7
-              ) === latestMonth
-          );
-
-        type MonthlyStats = {
-          playerId: string;
-          wins: number;
-          losses: number;
-          setsWon: number;
-          setsLost: number;
-          gamesWon: number;
-          gamesLost: number;
-        };
-
-        const monthlyStats: MonthlyStats[] =
-          players.map((player) => {
-            const playerMonthly =
-              monthlyResults.filter(
-                (item) =>
-                  item.playerId ===
-                  player.id
-              );
-
-            return {
-              playerId: player.id,
-              wins: playerMonthly.filter(
-                (item) =>
-                  item.result ===
-                  "win"
-              ).length,
-              losses:
-                playerMonthly.filter(
-                  (item) =>
-                    item.result ===
-                    "loss"
-                ).length,
-              setsWon:
-                playerMonthly.reduce(
-                  (total, item) =>
-                    total + item.setsWon,
-                  0
-                ),
-              setsLost:
-                playerMonthly.reduce(
-                  (total, item) =>
-                    total + item.setsLost,
-                  0
-                ),
-              gamesWon:
-                playerMonthly.reduce(
-                  (total, item) =>
-                    total + item.gamesWon,
-                  0
-                ),
-              gamesLost:
-                playerMonthly.reduce(
-                  (total, item) =>
-                    total + item.gamesLost,
-                  0
-                ),
-            };
-          });
-
-        monthlyStats.sort((a, b) => {
-          const winDifferenceA =
-            a.wins - a.losses;
-          const winDifferenceB =
-            b.wins - b.losses;
-
-          if (
-            winDifferenceA !==
-            winDifferenceB
-          ) {
-            return (
-              winDifferenceB -
-              winDifferenceA
-            );
-          }
-
-          const setDifferenceA =
-            a.setsWon - a.setsLost;
-          const setDifferenceB =
-            b.setsWon - b.setsLost;
-
-          if (
-            setDifferenceA !==
-            setDifferenceB
-          ) {
-            return (
-              setDifferenceB -
-              setDifferenceA
-            );
-          }
-
-          const gameDifferenceA =
-            a.gamesWon - a.gamesLost;
-          const gameDifferenceB =
-            b.gamesWon - b.gamesLost;
-
-          return (
-            gameDifferenceB -
-            gameDifferenceA
-          );
-        });
-
-        const monthlyWinner =
-          monthlyStats.find(
-            (item) =>
-              item.wins > 0 ||
-              item.losses > 0
-          );
-
-        if (monthlyWinner) {
-          const winDifference =
-            monthlyWinner.wins -
-            monthlyWinner.losses;
-
-          const setDifference =
-            monthlyWinner.setsWon -
-            monthlyWinner.setsLost;
-
-          const gameDifference =
-            monthlyWinner.gamesWon -
-            monthlyWinner.gamesLost;
-
-          result.push({
-            icon: "⭐",
-            title:
-              "Giocatore del mese",
-            description:
-              `Miglior rendimento · ${formatMonth(
+        result.push({
+          icon: "⭐",
+          title: "Giocatore del Mese",
+          description: latestDate
+            ? `Più vittorie · ${formatMonth(
                 latestDate
-              )}`,
-            playerName:
-              playerMap.get(
-                monthlyWinner.playerId
-              ) || "Giocatore",
-            value:
-              winDifference >= 0
-                ? `+${winDifference} vittorie`
-                : `${winDifference} vittorie`,
-            detail:
-              `Set ${setDifference >= 0 ? "+" : ""}${setDifference} · Game ${gameDifference >= 0 ? "+" : ""}${gameDifference}`,
-          });
+              )}`
+            : "Più vittorie nel mese",
+          playerName: names(winners),
+          value: `${maxMonthlyWins} ${
+            maxMonthlyWins === 1
+              ? "vittoria"
+              : "vittorie"
+          }`,
+        });
+      }
+    }
+
+    /*
+     * ============================================================
+     * 🎢 MONTAGNE RUSSE
+     * ============================================================
+     */
+
+    if (latestMonth) {
+      type DayPerformance = {
+        date: string;
+        resultRank: number;
+        setRank: number;
+        gameDiff: number;
+      };
+
+      const monthlyDayPerformance = new Map<
+        string,
+        DayPerformance[]
+      >();
+
+      for (const player of players) {
+        monthlyDayPerformance.set(player.id, []);
+      }
+
+      for (const player of players) {
+        const playerMonthResults = playerResults.filter(
+          (item) =>
+            item.playerId === player.id &&
+            item.matchDate.slice(0, 7) === latestMonth
+        );
+
+        const dates = Array.from(
+          new Set(
+            playerMonthResults.map(
+              (item) => item.matchDate
+            )
+          )
+        );
+
+        for (const date of dates) {
+          const dayResults = playerMonthResults.filter(
+            (item) => item.matchDate === date
+          );
+
+          if (dayResults.length === 0) {
+            continue;
+          }
+
+          const item = dayResults[0];
+
+          let resultRank = 0;
+
+          if (item.result === "win") {
+            resultRank = 2;
+          } else if (item.result === "draw") {
+            resultRank = 1;
+          }
+
+          let setRank = 0;
+
+          if (item.result === "win") {
+            if (
+              item.setsWon === 2 &&
+              item.setsLost === 0
+            ) {
+              setRank = 2;
+            } else if (
+              item.setsWon > item.setsLost
+            ) {
+              setRank = 1;
+            }
+          } else if (item.result === "loss") {
+            if (
+              item.setsWon === 1 &&
+              item.setsLost === 2
+            ) {
+              setRank = 1;
+            }
+          }
+
+          const gameDiff =
+            item.gamesWon - item.gamesLost;
+
+          monthlyDayPerformance
+            .get(player.id)
+            ?.push({
+              date,
+              resultRank,
+              setRank,
+              gameDiff,
+            });
         }
       }
+
+      function comparePerformance(
+        a: DayPerformance,
+        b: DayPerformance
+      ) {
+        if (a.resultRank !== b.resultRank) {
+          return a.resultRank - b.resultRank;
+        }
+
+        if (a.setRank !== b.setRank) {
+          return a.setRank - b.setRank;
+        }
+
+        return a.gameDiff - b.gameDiff;
+      }
+
+      let largestRange = -1;
+      const rollerCoasterWinners: string[] = [];
+
+      for (const player of players) {
+        const performances =
+          monthlyDayPerformance.get(player.id) || [];
+
+        if (performances.length < 2) {
+          continue;
+        }
+
+        let best = performances[0];
+        let worst = performances[0];
+
+        for (const performance of performances) {
+          if (
+            comparePerformance(
+              performance,
+              best
+            ) > 0
+          ) {
+            best = performance;
+          }
+
+          if (
+            comparePerformance(
+              performance,
+              worst
+            ) < 0
+          ) {
+            worst = performance;
+          }
+        }
+
+        const performanceValue = (
+          performance: DayPerformance
+        ) =>
+          performance.resultRank * 10000 +
+          performance.setRank * 1000 +
+          performance.gameDiff;
+
+        const range =
+          performanceValue(best) -
+          performanceValue(worst);
+
+        if (range > largestRange) {
+          largestRange = range;
+          rollerCoasterWinners.length = 0;
+          rollerCoasterWinners.push(player.id);
+        } else if (range === largestRange) {
+          rollerCoasterWinners.push(player.id);
+        }
+      }
+
+      if (
+        largestRange > 0 &&
+        rollerCoasterWinners.length > 0
+      ) {
+        result.push({
+          icon: "🎢",
+          title: "Montagne Russe",
+          description:
+            `Maggiore oscillazione di rendimento · ${formatMonth(
+              `${latestMonth}-01`
+            )}`,
+          playerName: names(
+            Array.from(
+              new Set(rollerCoasterWinners)
+            )
+          ),
+          value: "↑↓",
+        });
+      }
+    }
+
+    /*
+     * ============================================================
+     * 🐢 LA RESURREZIONE
+     * ============================================================
+     */
+
+    let longestNegativeStreak = 0;
+    const resurrectionWinners: string[] = [];
+
+    for (const player of players) {
+      const playerResultsSorted = playerResults
+        .filter((item) => item.playerId === player.id)
+        .sort((a, b) =>
+          a.matchDate.localeCompare(b.matchDate)
+        );
+
+      let currentLossStreak = 0;
+      let playerLongestLossStreak = 0;
+
+      for (const item of playerResultsSorted) {
+        if (item.result === "loss") {
+          currentLossStreak++;
+        } else if (item.result === "win") {
+          if (currentLossStreak > 2) {
+            playerLongestLossStreak = Math.max(
+              playerLongestLossStreak,
+              currentLossStreak
+            );
+          }
+
+          currentLossStreak = 0;
+        } else {
+          currentLossStreak = 0;
+        }
+      }
+
+      if (
+        playerLongestLossStreak >
+        longestNegativeStreak
+      ) {
+        longestNegativeStreak =
+          playerLongestLossStreak;
+
+        resurrectionWinners.length = 0;
+        resurrectionWinners.push(player.id);
+      } else if (
+        playerLongestLossStreak ===
+          longestNegativeStreak &&
+        playerLongestLossStreak > 2
+      ) {
+        resurrectionWinners.push(player.id);
+      }
+    }
+
+    if (
+      longestNegativeStreak > 2 &&
+      resurrectionWinners.length > 0
+    ) {
+      result.push({
+        icon: "🐢",
+        title: "La Resurrezione",
+        description:
+          "Tornato alla vittoria dopo la striscia negativa più lunga",
+        playerName: names(
+          Array.from(
+            new Set(resurrectionWinners)
+          )
+        ),
+        value: `${longestNegativeStreak} sconfitte`,
+      });
+    }
+
+    /*
+     * ============================================================
+     * ⚡ COPPIA D'ASSI
+     * ============================================================
+     */
+
+    type PairStats = {
+      playerIds: [string, string];
+      wins: number;
+      played: number;
+    };
+
+    const pairStats = new Map<string, PairStats>();
+
+    for (const match of matches) {
+      const playersForMatch = matchPlayers.filter(
+        (item) => item.match_id === match.id
+      );
+
+      if (playersForMatch.length !== 4) {
+        continue;
+      }
+
+      const teamA = playersForMatch
+        .filter((item) => item.team === "A")
+        .map((item) => item.player_id)
+        .sort();
+
+      const teamB = playersForMatch
+        .filter((item) => item.team === "B")
+        .map((item) => item.player_id)
+        .sort();
+
+      const matchResult = playerResults.filter(
+        (item) => item.matchId === match.id
+      );
+
+      const teams = [
+        {
+          ids: teamA as [string, string],
+          players: matchResult.filter(
+            (item) => teamA.includes(item.playerId)
+          ),
+        },
+        {
+          ids: teamB as [string, string],
+          players: matchResult.filter(
+            (item) => teamB.includes(item.playerId)
+          ),
+        },
+      ];
+
+      for (const team of teams) {
+        const key = team.ids.join("|");
+
+        if (!pairStats.has(key)) {
+          pairStats.set(key, {
+            playerIds: team.ids,
+            wins: 0,
+            played: 0,
+          });
+        }
+
+        const stats = pairStats.get(key)!;
+        stats.played++;
+
+        if (
+          team.players.length > 0 &&
+          team.players.every(
+            (item) => item.result === "win"
+          )
+        ) {
+          stats.wins++;
+        }
+      }
+    }
+
+    let maxPairWins = 0;
+
+    for (const stats of pairStats.values()) {
+      maxPairWins = Math.max(
+        maxPairWins,
+        stats.wins
+      );
+    }
+
+    if (maxPairWins > 0) {
+      const winningPairs = Array.from(
+        pairStats.values()
+      ).filter(
+        (stats) => stats.wins === maxPairWins
+      );
+
+      const pairNames = winningPairs
+        .map(
+          (pair) =>
+            `${playerMap.get(
+              pair.playerIds[0]
+            ) || "Giocatore"} & ${
+              playerMap.get(
+                pair.playerIds[1]
+              ) || "Giocatore"
+            }`
+        )
+        .join(" · ");
+
+      result.push({
+        icon: "⚡",
+        title: "Coppia d'Assi",
+        description:
+          "La coppia con più vittorie insieme",
+        playerName: pairNames,
+        value: `${maxPairWins} ${
+          maxPairWins === 1
+            ? "vittoria"
+            : "vittorie"
+        }`,
+      });
+    }
+
+    /*
+     * ============================================================
+     * 🗓️ PRESENZA D'ONORE
+     * ============================================================
+     */
+
+    const playedMap = new Map<string, number>();
+
+    for (const player of players) {
+      playedMap.set(player.id, 0);
+    }
+
+    for (const item of playerResults) {
+      playedMap.set(
+        item.playerId,
+        (playedMap.get(item.playerId) || 0) + 1
+      );
+    }
+
+    const maxPlayed = Math.max(
+      0,
+      ...Array.from(playedMap.values())
+    );
+
+    if (maxPlayed > 0) {
+      const winners = Array.from(
+        playedMap.entries()
+      )
+        .filter(([, value]) => value === maxPlayed)
+        .map(([id]) => id);
+
+      result.push({
+        icon: "🗓️",
+        title: "Presenza d'Onore",
+        description:
+          "Più partite disputate nella stagione",
+        playerName: names(winners),
+        value: `${maxPlayed} ${
+          maxPlayed === 1
+            ? "partita"
+            : "partite"
+        }`,
+      });
     }
 
     return result;
@@ -639,21 +1067,27 @@ export default function Trofei() {
     players,
     playerResults,
     playerMap,
+    matches,
+    sets,
     matchdays,
   ]);
 
   return (
     <main className="dashboard-page">
+
       <header className="dashboard-header">
+
         <div>
           <p className="eyebrow">
             PADEL ON TUESDAY
           </p>
 
-          <h1>Trofei</h1>
+          <h1>
+            Trofei
+          </h1>
 
           <p className="dashboard-subtitle">
-            Stagione 2026–27
+            Perché non si vince solo a fine stagione.
           </p>
         </div>
 
@@ -663,11 +1097,16 @@ export default function Trofei() {
         >
           ← Classifica
         </Link>
+
       </header>
 
+
       {loading ? (
+
         <section className="players-card">
+
           <div className="empty-ranking">
+
             <div className="empty-icon">
               🏆
             </div>
@@ -675,23 +1114,39 @@ export default function Trofei() {
             <h3>
               Calcolo dei trofei...
             </h3>
+
           </div>
+
         </section>
+
       ) : message ? (
+
         <section className="players-card">
+
           <div className="empty-ranking">
+
             <div className="empty-icon">
               ⚠️
             </div>
 
-            <h3>Errore</h3>
+            <h3>
+              Errore
+            </h3>
 
-            <p>{message}</p>
+            <p>
+              {message}
+            </p>
+
           </div>
+
         </section>
+
       ) : trophies.length === 0 ? (
+
         <section className="players-card">
+
           <div className="empty-ranking">
+
             <div className="empty-icon">
               🏆
             </div>
@@ -703,162 +1158,145 @@ export default function Trofei() {
 
             <p>
               Registra qualche partita per
-              iniziare a costruire i record
+              iniziare a costruire i momenti
               della stagione.
             </p>
+
           </div>
+
         </section>
+
       ) : (
+
         <section className="players-card">
+
           <div className="section-heading">
+
             <div>
+
               <p className="eyebrow">
                 RICONOSCIMENTI
               </p>
 
               <h2>
-                I record della stagione
+                I momenti della stagione
               </h2>
+
             </div>
 
             <span className="players-count">
-              {trophies.length} trofei
+              {trophies.length}{" "}
+              {trophies.length === 1
+                ? "trofeo"
+                : "trofei"}
             </span>
+
           </div>
 
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 14,
-            }}
-          >
-            {trophies.map((trophy) => (
-              <div
-                key={trophy.title}
-                style={{
-                  border:
-                    "1px solid rgba(0,0,0,0.10)",
-                  borderRadius: 18,
-                  padding: 18,
-                  background:
-                    "rgba(0,0,0,0.02)",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 14,
-                  }}
-                >
-                  <div
-                    style={{
-                      width: 54,
-                      height: 54,
-                      borderRadius: 16,
-                      display: "flex",
-                      alignItems:
-                        "center",
-                      justifyContent:
-                        "center",
-                      fontSize: 28,
-                      background:
-                        "rgba(0,0,0,0.05)",
-                      flexShrink: 0,
-                    }}
-                  >
-                    {trophy.icon}
-                  </div>
 
-                  <div
-                    style={{
-                      flex: 1,
-                    }}
-                  >
-                    <p
-                      style={{
-                        margin: 0,
-                        fontSize: 11,
-                        fontWeight: 800,
-                        letterSpacing:
-                          "0.08em",
-                        opacity: 0.55,
-                      }}
-                    >
-                      {trophy.title.toUpperCase()}
-                    </p>
+          <div className="trophies-list">
 
-                    <h3
-                      style={{
-                        margin:
-                          "4px 0 2px",
-                        fontSize: 20,
-                      }}
-                    >
-                      {trophy.playerName}
-                    </h3>
+            {trophies.map((trophy, index) => (
+  <div key={trophy.title}>
 
-                    <p
-                      style={{
-                        margin: 0,
-                        fontSize: 13,
-                        opacity: 0.65,
-                      }}
-                    >
-                      {trophy.description}
-                    </p>
-                  </div>
+    <article className="trophy-item">
 
-                  <div
-                    style={{
-                      textAlign: "right",
-                      flexShrink: 0,
-                    }}
-                  >
-                    <strong
-                      style={{
-                        fontSize: 18,
-                      }}
-                    >
-                      {trophy.value}
-                    </strong>
+  <div className="trophy-item-top">
 
-                    {trophy.detail && (
-                      <div
-                        style={{
-                          marginTop: 4,
-                          fontSize: 11,
-                          fontWeight: 700,
-                          opacity: 0.55,
-                        }}
-                      >
-                        {trophy.detail}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
+    <span className="trophy-number">
+      {String(index + 1).padStart(2, "0")}
+    </span>
+
+    <span className="trophy-icon">
+      {trophy.icon}
+    </span>
+
+  </div>
+
+  <div
+    className="trophy-item-content"
+    style={{
+      marginTop: 6,
+    }}
+  >
+
+    <p
+      className="trophy-item-kicker"
+      style={{
+        marginBottom: 3,
+      }}
+    >
+      {trophy.title.toUpperCase()}
+    </p>
+
+    <h3
+      style={{
+        margin: "0 0 3px",
+      }}
+    >
+      {trophy.playerName}
+    </h3>
+
+    <p
+      className="trophy-description"
+      style={{
+        margin: 0,
+      }}
+    >
+      {trophy.description}
+    </p>
+
+  </div>
+
+  <div
+    className="trophy-item-result"
+    style={{
+      marginTop: 8,
+    }}
+  >
+
+    <strong>
+      {trophy.value}
+    </strong>
+
+    {trophy.detail && (
+      <span>
+        {trophy.detail}
+      </span>
+    )}
+
+  </div>
+
+</article>
+
+{index < trophies.length - 1 && (
+  <div
+    style={{
+      width: "100%",
+      height: "1px",
+      backgroundColor: "#4a4a4a",
+      opacity: 0.55,
+      margin: "4px 0 22px",
+    }}
+  />
+)}
+
+  </div>
+))}
+
           </div>
 
-          <div
-            style={{
-              marginTop: 22,
-              paddingTop: 18,
-              borderTop:
-                "1px solid rgba(0,0,0,0.08)",
-              fontSize: 13,
-              opacity: 0.6,
-              lineHeight: 1.5,
-            }}
-          >
+
+          <div className="trophies-note">
             I trofei si aggiornano
             automaticamente ogni volta che
             vengono registrati nuovi risultati.
           </div>
+
         </section>
+
       )}
+
     </main>
   );
 }

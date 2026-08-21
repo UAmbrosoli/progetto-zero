@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { supabase } from "@/utils/supabase/client";
+import { createClient } from "@/utils/supabase/client";
 
 type Player = {
   id: string;
@@ -64,6 +64,7 @@ export default function Classifica() {
   async function loadRanking() {
     setLoading(true);
     setMessage("");
+    const supabase = createClient();
 
     try {
       const [
@@ -326,11 +327,11 @@ export default function Classifica() {
       </div>
 
       <Link
-        href="/dashboard"
-        className="back-link"
-      >
-        ← Dashboard
-      </Link>
+  href="/"
+  className="back-link"
+>
+  ← Home
+</Link>
     </header>
 
     <section className="players-card">
@@ -468,13 +469,13 @@ export default function Classifica() {
         </div>
 
         <div>
-          <h3>Storico</h3>
+  <h3>Classifica e statistiche</h3>
 
-          <p>
-            Rivedi tutte le giornate e le
-            partite della stagione.
-          </p>
-        </div>
+  <p>
+    Segui l'andamento della stagione,
+    giornata dopo giornata.
+  </p>
+</div>
 
         <span className="card-arrow">
           →
