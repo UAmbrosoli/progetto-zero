@@ -1091,12 +1091,7 @@ export default function Trofei() {
           </p>
         </div>
 
-        <Link
-          href="/classifica"
-          className="back-link"
-        >
-          ← Classifica
-        </Link>
+        
 
       </header>
 

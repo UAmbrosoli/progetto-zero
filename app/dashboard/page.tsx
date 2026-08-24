@@ -43,9 +43,7 @@ export default function Dashboard() {
           </p>
         </div>
 
-        <Link href="/" className="back-link">
-          ← Home
-        </Link>
+      
       </header>
 
       <section className="welcome-card">

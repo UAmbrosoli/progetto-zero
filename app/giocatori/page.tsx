@@ -99,12 +99,7 @@ export default function Giocatori() {
           </p>
         </div>
 
-        <Link
-          href="/dashboard"
-          className="back-link"
-        >
-          ← Dashboard
-        </Link>
+      
       </header>
 
       <section className="players-card">

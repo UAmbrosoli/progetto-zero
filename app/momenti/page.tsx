@@ -277,12 +277,7 @@ export default function Momenti() {
 
         </div>
 
-        <Link
-          href="/dashboard"
-          className="back-link"
-        >
-          ← Dashboard
-        </Link>
+
 
       </header>
 

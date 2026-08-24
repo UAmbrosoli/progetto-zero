@@ -326,12 +326,6 @@ export default function Classifica() {
         </p>
       </div>
 
-      <Link
-  href="/"
-  className="back-link"
->
-  ← Home
-</Link>
     </header>
 
     <section className="players-card">
