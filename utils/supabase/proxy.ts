@@ -66,7 +66,65 @@ export async function updateSession(
       }
     );
 
-  await supabase.auth.getUser();
+  const {
+    data: {
+      user,
+    },
+  } = await supabase.auth.getUser();
 
-  return response;
+  const pathname =
+    request.nextUrl.pathname;
+
+  const publicPaths = [
+    "/login",
+    "/auth/callback",
+    "/imposta-password",
+    "/recupera-password",
+  ];
+
+  const isPublicPath =
+    publicPaths.some(
+      (path) =>
+        pathname === path ||
+        pathname.startsWith(
+          `${path}/`
+        )
+    );
+
+ if (!user && !isPublicPath) {
+  const loginUrl =
+    request.nextUrl.clone();
+
+  loginUrl.pathname = "/login";
+  loginUrl.search = "";
+
+  return NextResponse.redirect(
+    loginUrl
+  );
+}
+
+if (
+  user &&
+  pathname.startsWith("/accessi")
+) {
+  const {
+    data: role,
+  } = await supabase.rpc(
+    "get_my_role"
+  );
+
+  if (role !== "admin") {
+    const homeUrl =
+      request.nextUrl.clone();
+
+    homeUrl.pathname = "/";
+    homeUrl.search = "";
+
+    return NextResponse.redirect(
+      homeUrl
+    );
+  }
+}
+
+return response;
 }

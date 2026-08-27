@@ -5,18 +5,13 @@ import {
   useState,
 } from "react";
 
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-
 import { supabase } from "@/utils/supabase/client";
 
-export default function LoginPage() {
-  const router = useRouter();
-
+export default function RecuperaPasswordPage() {
   const [email, setEmail] =
     useState("");
 
-  const [password, setPassword] =
+  const [message, setMessage] =
     useState("");
 
   const [error, setError] =
@@ -25,54 +20,36 @@ export default function LoginPage() {
   const [loading, setLoading] =
     useState(false);
 
-  async function handleLogin(
+  async function handleSubmit(
     event: FormEvent<HTMLFormElement>
   ) {
     event.preventDefault();
-
+    setMessage("");
     setError("");
     setLoading(true);
 
-    const { data, error: loginError } =
-  await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
+    const { error: resetError } =
+      await supabase.auth.resetPasswordForEmail(
+        email,
+        {
+          redirectTo:
+            `${window.location.origin}/auth/callback`,
+        }
+      );
 
-console.log("LOGIN DATA:", data);
-console.log("LOGIN ERROR:", loginError);
+    if (resetError) {
+      setError(
+        resetError.message
+      );
+      setLoading(false);
+      return;
+    }
 
-if (loginError) {
-  setError(
-    loginError.message
-  );
-  setLoading(false);
-  return;
-}
+    setMessage(
+      "Se l'indirizzo è registrato, riceverai una email per reimpostare la password."
+    );
 
-const {
-  data: role,
-  error: roleError,
-} =
-  await supabase.rpc(
-    "get_my_role"
-  );
-
-if (roleError) {
-  setError(
-    roleError.message
-  );
-  setLoading(false);
-  return;
-}
-
-console.log(
-  "RUOLO UTENTE:",
-  role
-);
-
-router.replace("/");
-router.refresh();
+    setLoading(false);
   }
 
   return (
@@ -107,11 +84,11 @@ router.refresh();
             opacity: 0.7,
           }}
         >
-          Accedi al campionato
+          Recupera la tua password
         </p>
 
         <form
-          onSubmit={handleLogin}
+          onSubmit={handleSubmit}
           style={{
             display: "flex",
             flexDirection: "column",
@@ -135,30 +112,7 @@ router.refresh();
               borderRadius: 12,
               border: "1px solid #ccc",
               fontSize: 16,
-              boxSizing:
-                "border-box",
-            }}
-          />
-
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(event) =>
-              setPassword(
-                event.target.value
-              )
-            }
-            autoComplete="current-password"
-            required
-            style={{
-              width: "100%",
-              padding: "14px 16px",
-              borderRadius: 12,
-              border: "1px solid #ccc",
-              fontSize: 16,
-              boxSizing:
-                "border-box",
+              boxSizing: "border-box",
             }}
           />
 
@@ -170,6 +124,17 @@ router.refresh();
               }}
             >
               {error}
+            </p>
+          )}
+
+          {message && (
+            <p
+              style={{
+                margin: 0,
+                fontSize: 14,
+              }}
+            >
+              {message}
             </p>
           )}
 
@@ -187,24 +152,10 @@ router.refresh();
             }}
           >
             {loading
-              ? "Accesso..."
-              : "Entra"}
+              ? "Invio..."
+              : "Invia email"}
           </button>
-
         </form>
-
-        <Link
-          href="/recupera-password"
-          style={{
-            display: "block",
-            marginTop: 16,
-            textAlign: "center",
-            fontSize: 14,
-            textDecoration: "none",
-          }}
-        >
-          Hai dimenticato la password?
-        </Link>
       </div>
     </main>
   );

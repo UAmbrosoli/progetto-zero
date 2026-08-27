@@ -468,12 +468,15 @@ function getTitleStory(data: HomeData) {
 }
 
 export default function Home() {
-  const calendar = getCalendarDays();
+  const [calendar, setCalendar] =
+    useState<ReturnType<typeof getCalendarDays> | null>(null);
 
   const [data, setData] = useState<HomeData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    setCalendar(getCalendarDays());
+
     loadHomeData()
       .then(setData)
       .catch((error) => {
@@ -492,6 +495,10 @@ export default function Home() {
         text:
           "Ogni martedì può cambiare qualcosa.",
       };
+
+  if (!calendar) {
+    return null;
+  }
 
   return (
     <main className="home-page">
