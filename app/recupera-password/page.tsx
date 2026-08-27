@@ -33,7 +33,7 @@ export default function RecuperaPasswordPage() {
         email,
         {
           redirectTo:
-            `${window.location.origin}/auth/callback`,
+            `${window.location.origin}/auth/confirm`,
         }
       );
 

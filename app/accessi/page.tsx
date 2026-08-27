@@ -5,9 +5,17 @@ import {
   useState,
 } from "react";
 
+type AppRole =
+  | "player"
+  | "organizer"
+  | "admin";
+
 export default function AccessiPage() {
   const [email, setEmail] =
     useState("");
+
+  const [role, setRole] =
+    useState<AppRole>("player");
 
   const [message, setMessage] =
     useState("");
@@ -37,6 +45,7 @@ export default function AccessiPage() {
           },
           body: JSON.stringify({
             email,
+            role,
           }),
         });
 
@@ -57,6 +66,7 @@ export default function AccessiPage() {
       );
 
       setEmail("");
+      setRole("player");
     } catch {
       setError(
         "Errore di connessione."
@@ -118,7 +128,7 @@ export default function AccessiPage() {
             fontSize: 20,
           }}
         >
-          Accredita un giocatore
+          Accredita un utente
         </h2>
 
         <p
@@ -128,9 +138,8 @@ export default function AccessiPage() {
             opacity: 0.7,
           }}
         >
-          Inserisci l'indirizzo email.
-          Riceverà un invito per
-          creare la propria password.
+          Inserisci l'indirizzo email
+          e scegli il ruolo.
         </p>
 
         <form
@@ -163,6 +172,38 @@ export default function AccessiPage() {
                 "border-box",
             }}
           />
+
+          <select
+            value={role}
+            onChange={(event) =>
+              setRole(
+                event.target.value as AppRole
+              )
+            }
+            style={{
+              width: "100%",
+              padding: "14px 16px",
+              borderRadius: 12,
+              border:
+                "1px solid #ccc",
+              fontSize: 16,
+              boxSizing:
+                "border-box",
+              background: "white",
+            }}
+          >
+            <option value="player">
+              Giocatore
+            </option>
+
+            <option value="organizer">
+              Organizzatore
+            </option>
+
+            <option value="admin">
+              Amministratore
+            </option>
+          </select>
 
           <button
             type="submit"
