@@ -1,3 +1,4 @@
+
 import {
   createServerClient,
 } from "@supabase/ssr";
@@ -78,6 +79,7 @@ export async function updateSession(
   const publicPaths = [
     "/login",
     "/auth/callback",
+    "/auth/confirm",
     "/imposta-password",
     "/recupera-password",
   ];
@@ -91,40 +93,40 @@ export async function updateSession(
         )
     );
 
- if (!user && !isPublicPath) {
-  const loginUrl =
-    request.nextUrl.clone();
-
-  loginUrl.pathname = "/login";
-  loginUrl.search = "";
-
-  return NextResponse.redirect(
-    loginUrl
-  );
-}
-
-if (
-  user &&
-  pathname.startsWith("/accessi")
-) {
-  const {
-    data: role,
-  } = await supabase.rpc(
-    "get_my_role"
-  );
-
-  if (role !== "admin") {
-    const homeUrl =
+  if (!user && !isPublicPath) {
+    const loginUrl =
       request.nextUrl.clone();
 
-    homeUrl.pathname = "/";
-    homeUrl.search = "";
+    loginUrl.pathname = "/login";
+    loginUrl.search = "";
 
     return NextResponse.redirect(
-      homeUrl
+      loginUrl
     );
   }
-}
 
-return response;
+  if (
+    user &&
+    pathname.startsWith("/accessi")
+  ) {
+    const {
+      data: role,
+    } = await supabase.rpc(
+      "get_my_role"
+    );
+
+    if (role !== "admin") {
+      const homeUrl =
+        request.nextUrl.clone();
+
+      homeUrl.pathname = "/";
+      homeUrl.search = "";
+
+      return NextResponse.redirect(
+        homeUrl
+      );
+    }
+  }
+
+  return response;
 }
