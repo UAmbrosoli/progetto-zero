@@ -14,50 +14,39 @@ export async function GET(request: NextRequest) {
     searchParams.get("next") ??
     "/imposta-password";
 
-  const redirectTo =
-    request.nextUrl.clone();
-
-  redirectTo.pathname = next;
-
-  redirectTo.searchParams.delete("token_hash");
-  redirectTo.searchParams.delete("type");
-  redirectTo.searchParams.delete("next");
-
-  if (token_hash && type) {
-    const supabase =
-      await createClient();
-
-    const { error } =
-      await supabase.auth.verifyOtp({
-        token_hash,
-        type,
-      });
-
-    if (error) {
-      console.error(
-        "VERIFY OTP ERROR:",
-        error
-      );
-
-      redirectTo.pathname = "/login";
-      redirectTo.search =
-        `?error=${encodeURIComponent(error.message)}`;
-
-      return NextResponse.redirect(
-        redirectTo
-      );
-    }
-
+  if (!token_hash || !type) {
     return NextResponse.redirect(
-      redirectTo
+      new URL(
+        "/login?error=missing_token",
+        request.url
+      )
     );
   }
 
-  redirectTo.pathname = "/login";
-  redirectTo.search =
-    "?error=missing_token";
+  const supabase =
+    await createClient();
+
+  const { error } =
+    await supabase.auth.verifyOtp({
+      token_hash,
+      type,
+    });
+
+  if (error) {
+    return NextResponse.redirect(
+      new URL(
+        `/login?error=${encodeURIComponent(
+          error.message
+        )}`,
+        request.url
+      )
+    );
+  }
 
   return NextResponse.redirect(
-    redirectTo
+    new URL(
+      next,
+      request.url
+    )
   );
 }
