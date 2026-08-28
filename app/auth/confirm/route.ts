@@ -19,15 +19,9 @@ export async function GET(request: NextRequest) {
 
   redirectTo.pathname = next;
 
-  redirectTo.searchParams.delete(
-    "token_hash"
-  );
-  redirectTo.searchParams.delete(
-    "type"
-  );
-  redirectTo.searchParams.delete(
-    "next"
-  );
+  redirectTo.searchParams.delete("token_hash");
+  redirectTo.searchParams.delete("type");
+  redirectTo.searchParams.delete("next");
 
   if (token_hash && type) {
     const supabase =
@@ -39,15 +33,29 @@ export async function GET(request: NextRequest) {
         type,
       });
 
-    if (!error) {
+    if (error) {
+      console.error(
+        "VERIFY OTP ERROR:",
+        error
+      );
+
+      redirectTo.pathname = "/login";
+      redirectTo.search =
+        `?error=${encodeURIComponent(error.message)}`;
+
       return NextResponse.redirect(
         redirectTo
       );
     }
+
+    return NextResponse.redirect(
+      redirectTo
+    );
   }
 
   redirectTo.pathname = "/login";
-  redirectTo.search = "?error=auth_failed";
+  redirectTo.search =
+    "?error=missing_token";
 
   return NextResponse.redirect(
     redirectTo
