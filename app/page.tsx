@@ -468,6 +468,10 @@ function getTitleStory(data: HomeData) {
 }
 
 export default function Home() {
+    async function handleLogout() {
+    await supabase.auth.signOut();
+    window.location.href = "/login";
+  }
   const [calendar, setCalendar] =
     useState<ReturnType<typeof getCalendarDays> | null>(null);
 
@@ -502,7 +506,26 @@ export default function Home() {
 
   return (
     <main className="home-page">
-
+<button
+  type="button"
+  onClick={handleLogout}
+  style={{
+    position: "absolute",
+    top: 16,
+    right: 16,
+    padding: "7px 12px",
+    borderRadius: 999,
+    border: "1px solid rgba(0,0,0,0.15)",
+    background: "rgba(255,255,255,0.75)",
+    color: "#333",
+    fontSize: 12,
+    fontWeight: 500,
+    cursor: "pointer",
+    zIndex: 20,
+  }}
+>
+  Logout
+</button>
       {/* =====================================================
           HERO
           ===================================================== */}
