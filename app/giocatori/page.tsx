@@ -48,7 +48,11 @@ export default function Giocatori() {
     }
 
     try {
-      await createPlayer(firstName, lastName, email);
+      await createPlayer(
+        firstName,
+        lastName,
+        email
+      );
 
       await loadPlayers();
 
@@ -61,11 +65,40 @@ export default function Giocatori() {
         error
       );
 
-      alert("Errore nel salvataggio.");
+      const message =
+        error &&
+        typeof error === "object" &&
+        "message" in error
+          ? String(error.message)
+          : String(error);
+
+      const details =
+        error &&
+        typeof error === "object" &&
+        "details" in error
+          ? String(error.details)
+          : "";
+
+      const code =
+        error &&
+        typeof error === "object" &&
+        "code" in error
+          ? String(error.code)
+          : "";
+
+      alert(
+        `Errore nel salvataggio.\n\n` +
+        `Messaggio: ${message}\n` +
+        `Codice: ${code}\n` +
+        `Dettagli: ${details}`
+      );
     }
   }
 
-  async function removePlayer(id: string, name: string) {
+  async function removePlayer(
+    id: string,
+    name: string
+  ) {
     const conferma = confirm(
       `Vuoi eliminare ${name}?`
     );
@@ -90,7 +123,9 @@ export default function Giocatori() {
     <main>
       <header className="players-header">
         <div>
-          <p className="eyebrow">PADEL ON TUESDAY</p>
+          <p className="eyebrow">
+            PADEL ON TUESDAY
+          </p>
 
           <h1>Giocatori</h1>
 
@@ -98,14 +133,14 @@ export default function Giocatori() {
             Stagione 2026–27
           </p>
         </div>
-
-      
       </header>
 
       <section className="players-card">
         <div className="section-heading">
           <div>
-            <p className="eyebrow">PARTECIPANTI</p>
+            <p className="eyebrow">
+              PARTECIPANTI
+            </p>
 
             <h2>La rosa del campionato</h2>
           </div>
@@ -154,13 +189,18 @@ export default function Giocatori() {
 
         {players.length === 0 ? (
           <div className="empty-players">
-            <div className="empty-icon">👥</div>
+            <div className="empty-icon">
+              👥
+            </div>
 
-            <h3>Nessun giocatore ancora.</h3>
+            <h3>
+              Nessun giocatore ancora.
+            </h3>
 
             <p>
-              Inserisci i partecipanti al campionato
-              per iniziare a costruire la stagione.
+              Inserisci i partecipanti al
+              campionato per iniziare a costruire
+              la stagione.
             </p>
           </div>
         ) : (
@@ -175,15 +215,22 @@ export default function Giocatori() {
                   key={player.id}
                 >
                   <div className="player-number">
-                    {String(index + 1).padStart(2, "0")}
+                    {String(index + 1).padStart(
+                      2,
+                      "0"
+                    )}
                   </div>
 
                   <div>
-                    <strong>{displayName}</strong>
+                    <strong>
+                      {displayName}
+                    </strong>
 
                     <br />
 
-                    <small>{player.email}</small>
+                    <small>
+                      {player.email}
+                    </small>
                   </div>
 
                   <button

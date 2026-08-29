@@ -468,10 +468,13 @@ function getTitleStory(data: HomeData) {
 }
 
 export default function Home() {
-    async function handleLogout() {
-    await supabase.auth.signOut();
-    window.location.href = "/login";
-  }
+   async function handleLogout() {
+  await fetch("/api/logout", {
+    method: "POST",
+  });
+
+  window.location.href = "/login";
+}
   const [calendar, setCalendar] =
     useState<ReturnType<typeof getCalendarDays> | null>(null);
 

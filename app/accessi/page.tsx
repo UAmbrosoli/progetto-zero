@@ -193,16 +193,13 @@ export default function AccessiPage() {
             }}
           >
             <option value="player">
-              Giocatore
-            </option>
+  Giocatore
+</option>
 
-            <option value="organizer">
-              Organizzatore
-            </option>
+<option value="organizer">
+  Organizzatore
+</option>
 
-            <option value="admin">
-              Amministratore
-            </option>
           </select>
 
           <button

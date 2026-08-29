@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { createClient } from "@/utils/supabase/client";
 
 type Player = {
   id: string;
@@ -64,55 +63,33 @@ export default function Classifica() {
   async function loadRanking() {
     setLoading(true);
     setMessage("");
-    const supabase = createClient();
 
     try {
-      const [
-        playersResult,
-        matchesResult,
-        matchPlayersResult,
-        setsResult,
-      ] = await Promise.all([
-        supabase
-          .from("players")
-          .select("id, name, first_name, last_name"),
+      const response = await fetch("/api/classifica", {
+        method: "GET",
+        cache: "no-store",
+      });
 
-        supabase
-          .from("matches")
-          .select("id, court"),
+      const result = await response.json();
 
-        supabase
-          .from("match_players")
-          .select("match_id, player_id, team"),
-
-        supabase
-          .from("match_sets")
-          .select(
-            "match_id, set_number, team1_score, team2_score"
-          ),
-      ]);
-
-      if (playersResult.error) {
-        throw playersResult.error;
+      if (!response.ok) {
+        throw new Error(
+          result.error ||
+            "Non riesco a caricare la classifica."
+        );
       }
 
-      if (matchesResult.error) {
-        throw matchesResult.error;
-      }
+      const players: Player[] =
+        result.players ?? [];
 
-      if (matchPlayersResult.error) {
-        throw matchPlayersResult.error;
-      }
+      const matches: Match[] =
+        result.matches ?? [];
 
-      if (setsResult.error) {
-        throw setsResult.error;
-      }
+      const matchPlayers: MatchPlayer[] =
+        result.matchPlayers ?? [];
 
-      const players = playersResult.data ?? [];
-      const matches = matchesResult.data ?? [];
-      const matchPlayers =
-        matchPlayersResult.data ?? [];
-      const sets = setsResult.data ?? [];
+      const sets: MatchSet[] =
+        result.sets ?? [];
 
       const stats = new Map<
         string,
@@ -151,12 +128,24 @@ export default function Classifica() {
         }
 
         const teamA = playersInMatch
-          .filter((player) => player.team === "A")
-          .map((player) => player.player_id);
+          .filter(
+            (player) =>
+              player.team === "A"
+          )
+          .map(
+            (player) =>
+              player.player_id
+          );
 
         const teamB = playersInMatch
-          .filter((player) => player.team === "B")
-          .map((player) => player.player_id);
+          .filter(
+            (player) =>
+              player.team === "B"
+          )
+          .map(
+            (player) =>
+              player.player_id
+          );
 
         if (
           teamA.length !== 2 ||
@@ -166,7 +155,8 @@ export default function Classifica() {
         }
 
         const matchSets = sets.filter(
-          (set) => set.match_id === match.id
+          (set) =>
+            set.match_id === match.id
         );
 
         if (matchSets.length === 0) {
@@ -179,8 +169,13 @@ export default function Classifica() {
         let teamBSets = 0;
 
         for (const set of matchSets) {
-          const scoreA = Number(set.team1_score);
-          const scoreB = Number(set.team2_score);
+          const scoreA = Number(
+            set.team1_score
+          );
+
+          const scoreB = Number(
+            set.team2_score
+          );
 
           if (
             Number.isNaN(scoreA) ||
@@ -199,15 +194,23 @@ export default function Classifica() {
           }
         }
 
-        if (teamASets === 0 && teamBSets === 0) {
+        if (
+          teamASets === 0 &&
+          teamBSets === 0
+        ) {
           continue;
         }
 
-        let resultA: "win" | "draw" | "loss";
+        let resultA:
+          | "win"
+          | "draw"
+          | "loss";
 
         if (teamASets > teamBSets) {
           resultA = "win";
-        } else if (teamASets < teamBSets) {
+        } else if (
+          teamASets < teamBSets
+        ) {
           resultA = "loss";
         } else {
           resultA = "draw";
@@ -217,7 +220,8 @@ export default function Classifica() {
           ...teamA,
           ...teamB,
         ]) {
-          const player = stats.get(playerId);
+          const player =
+            stats.get(playerId);
 
           if (!player) {
             continue;
@@ -225,27 +229,46 @@ export default function Classifica() {
 
           player.played++;
 
-          const isTeamA = teamA.includes(playerId);
+          const isTeamA =
+            teamA.includes(playerId);
 
           if (isTeamA) {
-            player.gamesWon += teamAGames;
-            player.gamesLost += teamBGames;
-            player.setsWon += teamASets;
-            player.setsLost += teamBSets;
+            player.gamesWon +=
+              teamAGames;
+
+            player.gamesLost +=
+              teamBGames;
+
+            player.setsWon +=
+              teamASets;
+
+            player.setsLost +=
+              teamBSets;
           } else {
-            player.gamesWon += teamBGames;
-            player.gamesLost += teamAGames;
-            player.setsWon += teamBSets;
-            player.setsLost += teamASets;
+            player.gamesWon +=
+              teamBGames;
+
+            player.gamesLost +=
+              teamAGames;
+
+            player.setsWon +=
+              teamBSets;
+
+            player.setsLost +=
+              teamASets;
           }
 
-          if (resultA === "draw") {
+          if (
+            resultA === "draw"
+          ) {
             player.draws++;
             player.points += 1;
           } else {
             const won =
-              (isTeamA && resultA === "win") ||
-              (!isTeamA && resultA === "loss");
+              (isTeamA &&
+                resultA === "win") ||
+              (!isTeamA &&
+                resultA === "loss");
 
             if (won) {
               player.wins++;
@@ -257,44 +280,72 @@ export default function Classifica() {
         }
       }
 
-      const sortedRanking = Array.from(
-        stats.values()
-      ).sort((a, b) => {
-        if (b.points !== a.points) {
-          return b.points - a.points;
-        }
+      const sortedRanking =
+        Array.from(
+          stats.values()
+        ).sort((a, b) => {
+          if (
+            b.points !== a.points
+          ) {
+            return (
+              b.points -
+              a.points
+            );
+          }
 
-        if (b.wins !== a.wins) {
-          return b.wins - a.wins;
-        }
+          if (
+            b.wins !== a.wins
+          ) {
+            return (
+              b.wins -
+              a.wins
+            );
+          }
 
-        const setDiffA =
-          a.setsWon - a.setsLost;
+          const setDiffA =
+            a.setsWon -
+            a.setsLost;
 
-        const setDiffB =
-          b.setsWon - b.setsLost;
+          const setDiffB =
+            b.setsWon -
+            b.setsLost;
 
-        if (setDiffB !== setDiffA) {
-          return setDiffB - setDiffA;
-        }
+          if (
+            setDiffB !== setDiffA
+          ) {
+            return (
+              setDiffB -
+              setDiffA
+            );
+          }
 
-        const gameDiffA =
-          a.gamesWon - a.gamesLost;
+          const gameDiffA =
+            a.gamesWon -
+            a.gamesLost;
 
-        const gameDiffB =
-          b.gamesWon - b.gamesLost;
+          const gameDiffB =
+            b.gamesWon -
+            b.gamesLost;
 
-        if (gameDiffB !== gameDiffA) {
-          return gameDiffB - gameDiffA;
-        }
+          if (
+            gameDiffB !==
+            gameDiffA
+          ) {
+            return (
+              gameDiffB -
+              gameDiffA
+            );
+          }
 
-        return a.lastName.localeCompare(
-          b.lastName,
-          "it"
-        );
-      });
+          return a.lastName.localeCompare(
+            b.lastName,
+            "it"
+          );
+        });
 
-      setRanking(sortedRanking);
+      setRanking(
+        sortedRanking
+      );
     } catch (error) {
       console.error(
         "Errore caricamento classifica:",
@@ -312,192 +363,200 @@ export default function Classifica() {
   }
 
   return (
-  <main className="dashboard-page">
-    <header className="dashboard-header">
-      <div>
-        <p className="eyebrow">
-          PADEL ON TUESDAY
-        </p>
-
-        <h1>Classifica</h1>
-
-        <p className="dashboard-subtitle">
-          Stagione 2026–27
-        </p>
-      </div>
-
-    </header>
-
-    <section className="players-card">
-      <div className="section-heading">
+    <main className="dashboard-page">
+      <header className="dashboard-header">
         <div>
           <p className="eyebrow">
-            CAMPIONATO
+            PADEL ON TUESDAY
           </p>
 
-          <h2>La corsa al titolo</h2>
-        </div>
+          <h1>Classifica</h1>
 
-        <span className="players-count">
-          {ranking.length} giocatori
-        </span>
-      </div>
-
-      {loading ? (
-        <div className="empty-ranking">
-          <div className="empty-icon">
-            🎾
-          </div>
-
-          <h3>
-            Caricamento classifica...
-          </h3>
-        </div>
-      ) : message ? (
-        <div className="empty-ranking">
-          <div className="empty-icon">
-            ⚠️
-          </div>
-
-          <h3>Errore</h3>
-
-          <p>{message}</p>
-        </div>
-      ) : ranking.length === 0 ? (
-        <div className="empty-ranking">
-          <div className="empty-icon">
-            🏆
-          </div>
-
-          <h3>
-            La classifica è pronta a partire.
-          </h3>
-
-          <p>
-            Registra la prima giornata per
-            vedere i giocatori comparire qui.
+          <p className="dashboard-subtitle">
+            Stagione 2026–27
           </p>
         </div>
-      ) : (
-        <div className="players-list">
-          {ranking.map(
-            (player, index) => (
-              <div
-                className="player-row"
-                key={player.id}
-              >
-                <div className="player-number">
-                  {String(index + 1).padStart(
-                    2,
-                    "0"
-                  )}
-                </div>
+      </header>
 
+      <section className="players-card">
+        <div className="section-heading">
+          <div>
+            <p className="eyebrow">
+              CAMPIONATO
+            </p>
+
+            <h2>
+              La corsa al titolo
+            </h2>
+          </div>
+
+          <span className="players-count">
+            {ranking.length} giocatori
+          </span>
+        </div>
+
+        {loading ? (
+          <div className="empty-ranking">
+            <div className="empty-icon">
+              🎾
+            </div>
+
+            <h3>
+              Caricamento classifica...
+            </h3>
+          </div>
+        ) : message ? (
+          <div className="empty-ranking">
+            <div className="empty-icon">
+              ⚠️
+            </div>
+
+            <h3>Errore</h3>
+
+            <p>{message}</p>
+          </div>
+        ) : ranking.length === 0 ? (
+          <div className="empty-ranking">
+            <div className="empty-icon">
+              🏆
+            </div>
+
+            <h3>
+              La classifica è pronta a partire.
+            </h3>
+
+            <p>
+              Registra la prima giornata per
+              vedere i giocatori comparire qui.
+            </p>
+          </div>
+        ) : (
+          <div className="players-list">
+            {ranking.map(
+              (player, index) => (
                 <div
-                  style={{
-                    flex: 1,
-                  }}
+                  className="player-row"
+                  key={player.id}
                 >
-                  <strong>
-                    {player.name}
-                  </strong>
+                  <div className="player-number">
+                    {String(
+                      index + 1
+                    ).padStart(
+                      2,
+                      "0"
+                    )}
+                  </div>
 
                   <div
                     style={{
-                      marginTop: 5,
-                      fontSize: 13,
-                      opacity: 0.65,
+                      flex: 1,
                     }}
                   >
-                    {player.played}{" "}
-                    partite ·{" "}
-                    {player.wins} V ·{" "}
-                    {player.draws} P ·{" "}
-                    {player.losses} S
-                  </div>
-                </div>
+                    <strong>
+                      {player.name}
+                    </strong>
 
-                <div
-                  style={{
-                    textAlign: "right",
-                    minWidth: 70,
-                  }}
-                >
-                  <strong
-                    style={{
-                      fontSize: 24,
-                    }}
-                  >
-                    {player.points}
-                  </strong>
+                    <div
+                      style={{
+                        marginTop: 5,
+                        fontSize: 13,
+                        opacity: 0.65,
+                      }}
+                    >
+                      {player.played}{" "}
+                      partite ·{" "}
+                      {player.wins} V ·{" "}
+                      {player.draws} P ·{" "}
+                      {player.losses} S
+                    </div>
+                  </div>
 
                   <div
                     style={{
-                      fontSize: 11,
-                      fontWeight: 700,
-                      opacity: 0.55,
-                      letterSpacing:
-                        "0.08em",
+                      textAlign:
+                        "right",
+                      minWidth: 70,
                     }}
                   >
-                    PUNTI
+                    <strong
+                      style={{
+                        fontSize: 24,
+                      }}
+                    >
+                      {player.points}
+                    </strong>
+
+                    <div
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 700,
+                        opacity: 0.55,
+                        letterSpacing:
+                          "0.08em",
+                      }}
+                    >
+                      PUNTI
+                    </div>
                   </div>
                 </div>
-              </div>
-            )
-          )}
-        </div>
-      )}
-    </section>
+              )
+            )}
+          </div>
+        )}
+      </section>
 
-    <section
-      className="dashboard-grid"
-      style={{ marginTop: 24 }}
-    >
-      <Link
-        href="/storico"
-        className="menu-card"
+      <section
+        className="dashboard-grid"
+        style={{
+          marginTop: 24,
+        }}
       >
-        <div className="menu-icon">
-          📊
-        </div>
+        <Link
+          href="/storico"
+          className="menu-card"
+        >
+          <div className="menu-icon">
+            📊
+          </div>
 
-        <div>
-  <h3>Classifica e statistiche</h3>
+          <div>
+            <h3>
+              Classifica e statistiche
+            </h3>
 
-  <p>
-    Segui l'andamento della stagione,
-    giornata dopo giornata.
-  </p>
-</div>
+            <p>
+              Segui l'andamento della stagione,
+              giornata dopo giornata.
+            </p>
+          </div>
 
-        <span className="card-arrow">
-          →
-        </span>
-      </Link>
+          <span className="card-arrow">
+            →
+          </span>
+        </Link>
 
-      <Link
-        href="/trofei"
-        className="menu-card"
-      >
-        <div className="menu-icon">
-          🏅
-        </div>
+        <Link
+          href="/trofei"
+          className="menu-card"
+        >
+          <div className="menu-icon">
+            🏅
+          </div>
 
-        <div>
-          <h3>Trofei</h3>
+          <div>
+            <h3>Trofei</h3>
 
-          <p>
-            Scopri record, serie e
-            riconoscimenti della stagione.
-          </p>
-        </div>
+            <p>
+              Scopri record, serie e
+              riconoscimenti della stagione.
+            </p>
+          </div>
 
-        <span className="card-arrow">
-          →
-        </span>
-      </Link>
-    </section>
-  </main>
-);
+          <span className="card-arrow">
+            →
+          </span>
+        </Link>
+      </section>
+    </main>
+  );
 }

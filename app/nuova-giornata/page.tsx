@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/utils/supabase/client";
+import { getChampionshipData } from "@/services/championship";
 
 type Player = {
   id: string;
@@ -445,74 +446,82 @@ async function loadTodayMatches(matchdayId: string) {
   setLoadingTodayMatches(false);
 }
   async function loadPlayers() {
-  setLoading(true);
+    setLoading(true);
 
-  const [
-    playersResult,
-    matchPlayersResult,
-  ] = await Promise.all([
-    supabase
-      .from("players")
-      .select("id, name, first_name, last_name, email"),
+    try {
+      const [
+        data,
+        matchPlayersResult,
+      ] = await Promise.all([
+        getChampionshipData(),
+        supabase
+          .from("match_players")
+          .select("player_id"),
+      ]);
 
-    supabase
-      .from("match_players")
-      .select("player_id"),
-  ]);
+      if (matchPlayersResult.error) {
+        console.error(matchPlayersResult.error);
+        setMessage(
+          "Non riesco a leggere lo storico delle presenze."
+        );
+        setLoading(false);
+        return;
+      }
 
-  if (playersResult.error) {
-    console.error(playersResult.error);
-    setMessage("Non riesco a caricare i giocatori.");
-    setLoading(false);
-    return;
-  }
+      const playersData = data.players;
+      const matchPlayersData =
+        matchPlayersResult.data ?? [];
 
-  if (matchPlayersResult.error) {
-    console.error(matchPlayersResult.error);
-    setMessage("Non riesco a leggere lo storico delle presenze.");
-    setLoading(false);
-    return;
-  }
+      // Conta quante partite ha giocato ogni giocatore
+      const appearances = new Map<string, number>();
 
-  const playersData = playersResult.data ?? [];
-  const matchPlayersData = matchPlayersResult.data ?? [];
+      matchPlayersData.forEach((item) => {
+        appearances.set(
+          item.player_id,
+          (appearances.get(item.player_id) ?? 0) + 1
+        );
+      });
 
-  // Conta quante partite ha giocato ogni giocatore
-  const appearances = new Map<string, number>();
+      const appearancesObject: Record<string, number> = {};
 
-  matchPlayersData.forEach((item) => {
-    appearances.set(
-      item.player_id,
-      (appearances.get(item.player_id) ?? 0) + 1
-    );
-  });
-const appearancesObject: Record<string, number> = {};
+      appearances.forEach((count, playerId) => {
+        appearancesObject[playerId] = count;
+      });
 
-appearances.forEach((count, playerId) => {
-  appearancesObject[playerId] = count;
-});
+      setPlayerAppearances(appearancesObject);
 
-setPlayerAppearances(appearancesObject);
+      // Prima i più assidui.
+      // A parità di presenze, ordine alfabetico per cognome.
+      const sortedPlayers = [...playersData].sort((a, b) => {
+        const appearancesA = appearances.get(a.id) ?? 0;
+        const appearancesB = appearances.get(b.id) ?? 0;
 
-  // Prima i più assidui.
-  // A parità di presenze, ordine alfabetico per cognome.
-  const sortedPlayers = [...playersData].sort((a, b) => {
-    const appearancesA = appearances.get(a.id) ?? 0;
-    const appearancesB = appearances.get(b.id) ?? 0;
+        if (appearancesB !== appearancesA) {
+          return appearancesB - appearancesA;
+        }
 
-    if (appearancesB !== appearancesA) {
-      return appearancesB - appearancesA;
+        const lastA = a.last_name || a.name || "";
+        const lastB = b.last_name || b.name || "";
+
+        return lastA.localeCompare(lastB, "it");
+      });
+
+      setPlayers(sortedPlayers);
+    } catch (error) {
+      console.error(
+        "Errore caricamento giocatori:",
+        error
+      );
+
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Non riesco a caricare i giocatori."
+      );
+    } finally {
+      setLoading(false);
     }
-
-    const lastA = a.last_name || a.name || "";
-    const lastB = b.last_name || b.name || "";
-
-    return lastA.localeCompare(lastB, "it");
-  });
-
-  setPlayers(sortedPlayers);
-  setLoading(false);
-}
+  }
 
   function displayPlayerName(
     player: Player

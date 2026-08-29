@@ -2,7 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { supabase } from "@/utils/supabase/client";
+import {
+  getChampionshipData,
+  createPlayerMap,
+} from "@/services/championship";
 
 type Player = {
   id: string;
@@ -135,82 +138,29 @@ export default function Trofei() {
   }, []);
 
   async function loadData() {
-    setLoading(true);
-    setMessage("");
+  setLoading(true);
+  setMessage("");
 
-    try {
-      const [
-        playersResult,
-        matchdaysResult,
-        matchesResult,
-        matchPlayersResult,
-        setsResult,
-      ] = await Promise.all([
-        supabase
-          .from("players")
-          .select("id, name, first_name, last_name"),
+  try {
+    const data = await getChampionshipData();
 
-        supabase
-          .from("matchdays")
-          .select("id, match_date")
-          .order("match_date", {
-            ascending: true,
-          }),
+    setPlayers(data.players);
+    setMatchdays(data.matchdays);
+    setMatches(data.matches);
+    setMatchPlayers(data.matchPlayers);
+    setSets(data.sets);
+  } catch (error) {
+    console.error("Errore caricamento trofei:", error);
 
-        supabase
-          .from("matches")
-          .select("id, matchday_id, court")
-          .order("court"),
-
-        supabase
-          .from("match_players")
-          .select("match_id, player_id, team"),
-
-        supabase
-          .from("match_sets")
-          .select(
-            "match_id, set_number, team1_score, team2_score"
-          )
-          .order("set_number"),
-      ]);
-
-      if (playersResult.error) {
-        throw playersResult.error;
-      }
-
-      if (matchdaysResult.error) {
-        throw matchdaysResult.error;
-      }
-
-      if (matchesResult.error) {
-        throw matchesResult.error;
-      }
-
-      if (matchPlayersResult.error) {
-        throw matchPlayersResult.error;
-      }
-
-      if (setsResult.error) {
-        throw setsResult.error;
-      }
-
-      setPlayers(playersResult.data ?? []);
-      setMatchdays(matchdaysResult.data ?? []);
-      setMatches(matchesResult.data ?? []);
-      setMatchPlayers(matchPlayersResult.data ?? []);
-      setSets(setsResult.data ?? []);
-    } catch (error) {
-      console.error("Errore caricamento trofei:", error);
-
-      setMessage(
-        error instanceof Error
-          ? error.message
-          : "Non riesco a caricare i trofei."
-      );
-    } finally {
-      setLoading(false);
-    }
+    setMessage(
+      error instanceof Error
+        ? error.message
+        : "Non riesco a caricare i trofei."
+    );
+  } finally {
+    setLoading(false);
   }
+}
 
   const playerMap = useMemo(() => {
     const map = new Map<string, string>();

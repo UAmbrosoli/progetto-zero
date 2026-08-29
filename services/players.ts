@@ -1,18 +1,21 @@
-import { supabase } from "@/utils/supabase/client";
 import type { Player } from "@/types/player";
 
 export async function getPlayers(): Promise<Player[]> {
-  const { data, error } = await supabase
-    .from("players")
-    .select("*")
-    .order("last_name", { ascending: true })
-    .order("first_name", { ascending: true });
+  const response = await fetch("/api/giocatori", {
+    method: "GET",
+    cache: "no-store",
+  });
 
-  if (error) {
-    throw error;
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      result.error ||
+        "Errore nel caricamento dei giocatori."
+    );
   }
 
-  return data as Player[];
+  return result as Player[];
 }
 
 export async function createPlayer(
@@ -20,35 +23,49 @@ export async function createPlayer(
   last_name: string,
   email: string
 ): Promise<Player> {
-  const fullName = `${first_name} ${last_name}`.trim();
-
-  const { data, error } = await supabase
-    .from("players")
-    .insert([
-      {
-        name: fullName,
+  const response = await fetch(
+    "/api/giocatori",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
         first_name,
         last_name,
         email,
-      },
-    ])
-    .select()
-    .single();
+      }),
+    }
+  );
 
-  if (error) {
-    throw error;
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      result.error ||
+        "Errore nel salvataggio del giocatore."
+    );
   }
 
-  return data as Player;
+  return result as Player;
 }
 
-export async function deletePlayer(id: string): Promise<void> {
-  const { error } = await supabase
-    .from("players")
-    .delete()
-    .eq("id", id);
+export async function deletePlayer(
+  id: string
+): Promise<void> {
+  const response = await fetch(
+    `/api/giocatori?id=${encodeURIComponent(id)}`,
+    {
+      method: "DELETE",
+    }
+  );
 
-  if (error) {
-    throw error;
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      result.error ||
+        "Errore nell'eliminazione del giocatore."
+    );
   }
 }

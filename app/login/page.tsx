@@ -1,78 +1,40 @@
 "use client";
 
-import {
-  FormEvent,
-  useState,
-} from "react";
-
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-
-import { supabase } from "@/utils/supabase/client";
+import { FormEvent, useState } from "react";
 
 export default function LoginPage() {
-  const router = useRouter();
+  const [passphrase, setPassphrase] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const [email, setEmail] =
-    useState("");
-
-  const [password, setPassword] =
-    useState("");
-
-  const [error, setError] =
-    useState("");
-
-  const [loading, setLoading] =
-    useState(false);
-
-  async function handleLogin(
-    event: FormEvent<HTMLFormElement>
-  ) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     setError("");
     setLoading(true);
 
-    const { data, error: loginError } =
-  await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
+    try {
+      const response = await fetch("/api/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ passphrase }),
+      });
 
-console.log("LOGIN DATA:", data);
-console.log("LOGIN ERROR:", loginError);
+      const data = await response.json();
 
-if (loginError) {
-  setError(
-    loginError.message
-  );
-  setLoading(false);
-  return;
-}
+      if (!response.ok) {
+        setError(data.error || "Parola d'ordine non valida.");
+        setLoading(false);
+        return;
+      }
 
-const {
-  data: role,
-  error: roleError,
-} =
-  await supabase.rpc(
-    "get_my_role"
-  );
-
-if (roleError) {
-  setError(
-    roleError.message
-  );
-  setLoading(false);
-  return;
-}
-
-console.log(
-  "RUOLO UTENTE:",
-  role
-);
-
-router.replace("/");
-router.refresh();
+      window.location.href = "/";
+    } catch {
+      setError("Errore di connessione.");
+      setLoading(false);
+    }
   }
 
   return (
@@ -83,129 +45,103 @@ router.refresh();
         alignItems: "center",
         justifyContent: "center",
         padding: 24,
+        boxSizing: "border-box",
       }}
     >
-      <div
+      <section
         style={{
           width: "100%",
-          maxWidth: 380,
+          maxWidth: 420,
+          textAlign: "center",
         }}
       >
-        <h1
+        <p
           style={{
-            textAlign: "center",
-            marginBottom: 8,
+            margin: "0 0 10px",
+            fontSize: 12,
+            fontWeight: 700,
+            letterSpacing: 1.5,
+            opacity: 0.6,
           }}
         >
-          Padel On Tuesday
+          PADEL ON TUESDAY
+        </p>
+
+        <h1
+          style={{
+            margin: "0 0 12px",
+            fontSize: 34,
+          }}
+        >
+          Bentornato.
         </h1>
 
         <p
           style={{
-            textAlign: "center",
-            marginBottom: 32,
+            margin: "0 0 28px",
             opacity: 0.7,
           }}
         >
-          Accedi al campionato
+          Inserisci la parola d'ordine.
         </p>
 
         <form
-          onSubmit={handleLogin}
+          onSubmit={handleSubmit}
           style={{
             display: "flex",
             flexDirection: "column",
-            gap: 16,
+            gap: 12,
           }}
         >
           <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(event) =>
-              setEmail(
-                event.target.value
-              )
-            }
-            autoComplete="email"
-            required
-            style={{
-              width: "100%",
-              padding: "14px 16px",
-              borderRadius: 12,
-              border: "1px solid #ccc",
-              fontSize: 16,
-              boxSizing:
-                "border-box",
-            }}
-          />
-
-          <input
             type="password"
-            placeholder="Password"
-            value={password}
+            value={passphrase}
             onChange={(event) =>
-              setPassword(
-                event.target.value
-              )
+              setPassphrase(event.target.value)
             }
+            placeholder="Parola d'ordine"
             autoComplete="current-password"
+            autoFocus
             required
             style={{
               width: "100%",
-              padding: "14px 16px",
-              borderRadius: 12,
+              padding: "15px 16px",
+              borderRadius: 14,
               border: "1px solid #ccc",
-              fontSize: 16,
-              boxSizing:
-                "border-box",
+              fontSize: 17,
+              boxSizing: "border-box",
+              textAlign: "center",
             }}
           />
-
-          {error && (
-            <p
-              style={{
-                margin: 0,
-                fontSize: 14,
-              }}
-            >
-              {error}
-            </p>
-          )}
 
           <button
             type="submit"
             disabled={loading}
             style={{
               width: "100%",
-              padding: "14px 16px",
-              borderRadius: 12,
+              padding: "15px 16px",
+              borderRadius: 14,
               border: "none",
-              fontSize: 16,
-              fontWeight: 600,
-              cursor: "pointer",
+              fontSize: 17,
+              fontWeight: 700,
+              cursor: loading ? "default" : "pointer",
             }}
           >
-            {loading
-              ? "Accesso..."
-              : "Entra"}
+            {loading ? "Accesso..." : "Entra"}
           </button>
-
         </form>
 
-        <Link
-          href="/recupera-password"
-          style={{
-            display: "block",
-            marginTop: 16,
-            textAlign: "center",
-            fontSize: 14,
-            textDecoration: "none",
-          }}
-        >
-          Hai dimenticato la password?
-        </Link>
-      </div>
+        {error && (
+          <p
+            style={{
+              margin: "16px 0 0",
+              fontSize: 14,
+            }}
+          >
+            {error}
+          </p>
+        )}
+      </section>
     </main>
   );
 }

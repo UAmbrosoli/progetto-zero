@@ -2,7 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { supabase } from "@/utils/supabase/client";
+import {
+  getChampionshipData,
+  createPlayerMap,
+} from "@/services/championship";
 
 type Matchday = {
   id: string;
@@ -135,96 +138,32 @@ export default function Storico() {
     loadHistory();
   }, []);
 
-  async function loadHistory() {
+   async function loadHistory() {
     setLoading(true);
     setMessage("");
 
     try {
-      const [
-        matchdaysResult,
-        matchesResult,
-        playersResult,
-        matchPlayersResult,
-        setsResult,
-      ] = await Promise.all([
-        supabase
-          .from("matchdays")
-          .select("id, match_date")
-          .order("match_date", {
-            ascending: false,
-          }),
+      const data = await getChampionshipData();
 
-        supabase
-          .from("matches")
-          .select("id, matchday_id, court")
-          .order("court"),
+      const {
+        players: playersData,
+        matchdays: matchdaysData,
+        matches: matchesData,
+        matchPlayers: matchPlayersData,
+        sets: setsData,
+      } = data;
 
-        supabase
-          .from("players")
-          .select(
-            "id, name, first_name, last_name"
-          ),
+      const playerMap =
+        createPlayerMap(playersData);
+        console.log(
+  "STORICO PLAYERS:",
+  playersData
+);
 
-        supabase
-          .from("match_players")
-          .select(
-            "match_id, player_id, team"
-          ),
-
-        supabase
-          .from("match_sets")
-          .select(
-            "match_id, set_number, team1_score, team2_score"
-          )
-          .order("set_number"),
-      ]);
-
-      if (matchdaysResult.error) {
-        throw matchdaysResult.error;
-      }
-
-      if (matchesResult.error) {
-        throw matchesResult.error;
-      }
-
-      if (playersResult.error) {
-        throw playersResult.error;
-      }
-
-      if (matchPlayersResult.error) {
-        throw matchPlayersResult.error;
-      }
-
-      if (setsResult.error) {
-        throw setsResult.error;
-      }
-
-      const matchdaysData =
-        matchdaysResult.data ?? [];
-
-      const matchesData =
-        matchesResult.data ?? [];
-
-      const playersData =
-        playersResult.data ?? [];
-
-      const matchPlayersData =
-        matchPlayersResult.data ?? [];
-
-      const setsData =
-        setsResult.data ?? [];
-
-      const playerMap = new Map<
-        string,
-        string
-      >();
-
-      for (const player of playersData) {
-        playerMap.set(
-          player.id,
-          displayPlayerName(player)
-        );
-      }
+console.log(
+  "STORICO PLAYER MAP:",
+  Array.from(playerMap.entries())
+);
 
       const history: MatchdayView[] =
         matchdaysData.map((matchday) => {
@@ -256,13 +195,20 @@ export default function Storico() {
                       (player) =>
                         player.team === "A"
                     )
-                    .map(
-                      (player) =>
+                    .map((player) => {
+                      const name =
                         playerMap.get(
                           player.player_id
-                        ) ||
-                        "Giocatore"
-                    );
+                        );
+
+                      return (
+                        name ??
+                        `Giocatore (${player.player_id.slice(
+                          0,
+                          8
+                        )})`
+                      );
+                    });
 
                 const teamB =
                   playersInMatch
@@ -270,13 +216,20 @@ export default function Storico() {
                       (player) =>
                         player.team === "B"
                     )
-                    .map(
-                      (player) =>
+                    .map((player) => {
+                      const name =
                         playerMap.get(
                           player.player_id
-                        ) ||
-                        "Giocatore"
-                    );
+                        );
+
+                      return (
+                        name ??
+                        `Giocatore (${player.player_id.slice(
+                          0,
+                          8
+                        )})`
+                      );
+                    });
 
                 const matchSets =
                   setsData
@@ -305,7 +258,9 @@ export default function Storico() {
       setMatchdays(history);
       setPlayers(playersData);
       setMatches(matchesData);
-      setMatchPlayers(matchPlayersData);
+      setMatchPlayers(
+        matchPlayersData
+      );
       setSets(setsData);
 
       if (
@@ -832,14 +787,13 @@ export default function Storico() {
                                     }}
                                   >
                                     {match.teamA.map(
-                                      (
-                                        name
-                                      ) => (
-                                        <div
-                                          key={
-                                            name
-                                          }
-                                        >
+  (
+    name,
+    index
+  ) => (
+    <div
+      key={`teamA-${index}-${name}`}
+    >
                                           {
                                             name
                                           }
@@ -900,14 +854,13 @@ export default function Storico() {
                                     }}
                                   >
                                     {match.teamB.map(
-                                      (
-                                        name
-                                      ) => (
-                                        <div
-                                          key={
-                                            name
-                                          }
-                                        >
+  (
+    name,
+    index
+  ) => (
+    <div
+      key={`teamB-${index}-${name}`}
+    >
                                           {
                                             name
                                           }
