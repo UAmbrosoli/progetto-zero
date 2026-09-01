@@ -3,7 +3,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/utils/supabase/client";
-import { getChampionshipData } from "@/services/championship";
+import {
+  getChampionshipData,
+} from "@/services/championship";
+import {
+  createPlayer,
+  getPlayers,
+} from "@/services/players";
 
 type Player = {
   id: string;
@@ -450,14 +456,14 @@ async function loadTodayMatches(matchdayId: string) {
 
     try {
       const [
-        data,
-        matchPlayersResult,
-      ] = await Promise.all([
-        getChampionshipData(),
-        supabase
-          .from("match_players")
-          .select("player_id"),
-      ]);
+  playersData,
+  matchPlayersResult,
+] = await Promise.all([
+  getPlayers(),
+  supabase
+    .from("match_players")
+    .select("player_id"),
+]);
 
       if (matchPlayersResult.error) {
         console.error(matchPlayersResult.error);
@@ -468,7 +474,6 @@ async function loadTodayMatches(matchdayId: string) {
         return;
       }
 
-      const playersData = data.players;
       const matchPlayersData =
         matchPlayersResult.data ?? [];
 
@@ -847,132 +852,680 @@ if (
     );
   }
 
-function proposePairs(
-  mode: "all" | "court2"
-) {
-  if (mode === "all") {
-    if (
-      presentPlayers.length !== 4 &&
-      presentPlayers.length !== 8
-    ) {
-      return;
-    }
+function proposePairs() {
+  if (
+    presentPlayers.length !== 4 &&
+    presentPlayers.length !== 8
+  ) {
+    return;
+  }
 
-    const shuffled =
-      [...presentPlayers].sort(
-        () => Math.random() - 0.5
-      );
+  /*
+   * L'App propone una nuova composizione ogni volta.
+   *
+   * Non cerchiamo una sola "soluzione perfetta":
+   * costruiamo tutte le combinazioni possibili,
+   * le ordiniamo in base allo storico e scegliamo
+   * casualmente tra le migliori.
+   *
+   * In questo modo premendo più volte
+   * "Proponi abbinamenti" otteniamo davvero
+   * rotazioni diverse.
+   */
+  async function generateBestArrangement() {
+    try {
+      setMessage("");
 
-    const playersForCourt1 =
-      shuffled.slice(0, 4);
+      const {
+        data: matchPlayersData,
+        error,
+      } = await supabase
+        .from("match_players")
+        .select(
+          "match_id, player_id, team"
+        );
 
-    const newCourts: Court[] = [
-      {
-        id:
-          courts[0]?.id ||
-          `court-${Date.now()}-1`,
-        players: [
-          playersForCourt1[0],
-          playersForCourt1[1],
-          playersForCourt1[2],
-          playersForCourt1[3],
-        ],
-        sets:
-          courts[0]?.sets ||
-          createSets(),
-        comment:
-          courts[0]?.comment || "",
-      },
-    ];
+      if (error) {
+        throw new Error(
+          "Non riesco a leggere lo storico delle partite."
+        );
+      }
 
-    if (
-      presentPlayers.length === 8
-    ) {
-      const playersForCourt2 =
-        shuffled.slice(4, 8);
+      const history =
+        matchPlayersData ?? [];
+
+      const matches =
+        new Map<
+          string,
+          {
+            A: string[];
+            B: string[];
+          }
+        >();
+
+      history.forEach((item) => {
+        if (!matches.has(item.match_id)) {
+          matches.set(item.match_id, {
+            A: [],
+            B: [],
+          });
+        }
+
+        const match =
+          matches.get(item.match_id)!;
+
+        if (item.team === "A") {
+          match.A.push(item.player_id);
+        }
+
+        if (item.team === "B") {
+          match.B.push(item.player_id);
+        }
+      });
+
+      const teammates =
+        new Map<
+          string,
+          Map<string, number>
+        >();
+
+      const opponents =
+        new Map<
+          string,
+          Map<string, number>
+        >();
+
+      function addPair(
+        map: Map<
+          string,
+          Map<string, number>
+        >,
+        a: string,
+        b: string
+      ) {
+        if (!map.has(a)) {
+          map.set(a, new Map());
+        }
+
+        const inner =
+          map.get(a)!;
+
+        inner.set(
+          b,
+          (inner.get(b) ?? 0) + 1
+        );
+      }
+
+      matches.forEach((match) => {
+        for (const a of match.A) {
+          for (const b of match.A) {
+            if (a !== b) {
+              addPair(
+                teammates,
+                a,
+                b
+              );
+            }
+          }
+
+          for (const b of match.B) {
+            addPair(
+              opponents,
+              a,
+              b
+            );
+          }
+        }
+
+        for (const a of match.B) {
+          for (const b of match.B) {
+            if (a !== b) {
+              addPair(
+                teammates,
+                a,
+                b
+              );
+            }
+          }
+
+          for (const b of match.A) {
+            addPair(
+              opponents,
+              a,
+              b
+            );
+          }
+        }
+      });
+
+      function teammateCount(
+        a: string,
+        b: string
+      ) {
+        return (
+          teammates
+            .get(a)
+            ?.get(b) ?? 0
+        );
+      }
+
+      function opponentCount(
+        a: string,
+        b: string
+      ) {
+        return (
+          opponents
+            .get(a)
+            ?.get(b) ?? 0
+        );
+      }
+
+      function scoreCourt(
+        court: string[]
+      ) {
+        const [
+          player1,
+          player2,
+          player3,
+          player4,
+        ] = court;
+
+        let score = 0;
+
+        /*
+         * Ripetere un compagno pesa molto.
+         */
+        score +=
+          teammateCount(
+            player1,
+            player2
+          ) * 100;
+
+        score +=
+          teammateCount(
+            player3,
+            player4
+          ) * 100;
+
+        /*
+         * Anche ripetere gli avversari
+         * non è desiderabile.
+         */
+        score +=
+          opponentCount(
+            player1,
+            player3
+          ) * 10;
+
+        score +=
+          opponentCount(
+            player1,
+            player4
+          ) * 10;
+
+        score +=
+          opponentCount(
+            player2,
+            player3
+          ) * 10;
+
+        score +=
+          opponentCount(
+            player2,
+            player4
+          ) * 10;
+
+        return score;
+      }
+
+      function sameArrangement(
+        a: string[],
+        b: string[]
+      ) {
+        return a.every(
+          (player, index) =>
+            player === b[index]
+        );
+      }
+
+      /*
+       * ============================
+       * 4 GIOCATORI
+       * ============================
+       */
 
       if (
-        playersForCourt2.length === 4
+        presentPlayers.length === 4
       ) {
-        newCourts.push({
+        const [
+          a,
+          b,
+          c,
+          d,
+        ] = presentPlayers;
+
+        const arrangements = [
+          [a, b, c, d],
+          [a, c, b, d],
+          [a, d, b, c],
+          [b, c, a, d],
+          [b, d, a, c],
+          [c, d, a, b],
+        ];
+
+        const current =
+          courts[0]?.players.filter(
+            (
+              id
+            ): id is string =>
+              Boolean(id)
+          ) ?? [];
+
+        /*
+         * Ordiniamo tutte le configurazioni
+         * dalla migliore alla peggiore.
+         */
+        const ranked =
+          arrangements
+            .map((arrangement) => ({
+              arrangement,
+              score:
+                scoreCourt(
+                  arrangement
+                ),
+            }))
+            .sort(
+              (a, b) =>
+                a.score - b.score
+            );
+
+        /*
+         * Prima escludiamo la configurazione
+         * attualmente visibile.
+         */
+        const alternatives =
+          ranked.filter(
+            (item) =>
+              current.length !== 4 ||
+              !sameArrangement(
+                item.arrangement,
+                current
+              )
+          );
+
+        /*
+         * Prendiamo casualmente una delle
+         * migliori configurazioni.
+         *
+         * Così non torniamo sempre alla stessa.
+         */
+        const candidates =
+          alternatives.length > 0
+            ? alternatives.slice(
+                0,
+                Math.min(
+                  3,
+                  alternatives.length
+                )
+              )
+            : ranked.slice(
+                0,
+                Math.min(
+                  3,
+                  ranked.length
+                )
+              );
+
+        const chosen =
+          candidates[
+            Math.floor(
+              Math.random() *
+                candidates.length
+            )
+          ].arrangement;
+
+        setCourts([
+          {
+            id:
+              courts[0]?.id ||
+              `court-${Date.now()}-1`,
+            players: [
+              chosen[0],
+              chosen[1],
+              chosen[2],
+              chosen[3],
+            ],
+            sets:
+              courts[0]?.sets ||
+              createSets(),
+            comment:
+              courts[0]?.comment ||
+              "",
+          },
+        ]);
+
+        return;
+      }
+
+      /*
+       * ============================
+       * 8 GIOCATORI
+       * ============================
+       *
+       * Generiamo configurazioni realmente
+       * diverse.
+       *
+       * Non consideriamo diversa una partita
+       * solo perché i giocatori sono scritti
+       * in un ordine differente.
+       */
+
+      const players = [...presentPlayers];
+
+      /*
+       * Tutte le possibili coppie di 4 giocatori
+       * da mettere sul primo campo.
+       */
+      const combinations4: string[][] = [];
+
+      for (let i = 0; i < players.length; i++) {
+        for (let j = i + 1; j < players.length; j++) {
+          for (let k = j + 1; k < players.length; k++) {
+            for (let l = k + 1; l < players.length; l++) {
+              combinations4.push([
+                players[i],
+                players[j],
+                players[k],
+                players[l],
+              ]);
+            }
+          }
+        }
+      }
+
+      /*
+       * Chiave della singola coppia.
+       * L'ordine dei due giocatori non conta.
+       */
+      function pairKey(a: string, b: string) {
+        return [a, b].sort().join("|");
+      }
+
+      /*
+       * Chiave della partita.
+       *
+       * Esempio:
+       * A-B / C-D
+       *
+       * è uguale a:
+       * B-A / D-C
+       *
+       * ma è diversa da:
+       * A-C / B-D
+       */
+      function courtKey(court: string[]) {
+        const teamA = pairKey(
+          court[0],
+          court[1]
+        );
+
+        const teamB = pairKey(
+          court[2],
+          court[3]
+        );
+
+        return [teamA, teamB]
+          .sort()
+          .join("::");
+      }
+
+      /*
+       * Chiave dell'intera giornata.
+       *
+       * I due campi sono considerati distinti,
+       * quindi Campo 1 e Campo 2 restano separati.
+       */
+      function arrangementKey(
+        arrangement: string[][]
+      ) {
+        return [
+          courtKey(arrangement[0]),
+          courtKey(arrangement[1]),
+        ].join("###");
+      }
+
+      /*
+       * Per ogni gruppo di 4 giocatori
+       * costruiamo le 3 possibili divisioni
+       * in due coppie.
+       */
+      function courtArrangements(
+        group: string[]
+      ): string[][] {
+        const [a, b, c, d] = group;
+
+        return [
+          [a, b, c, d],
+          [a, c, b, d],
+          [a, d, b, c],
+        ];
+      }
+
+      /*
+       * Tutte le configurazioni REALMENTE diverse.
+       */
+      const allArrangements: {
+        courts: string[][];
+        score: number;
+        key: string;
+      }[] = [];
+
+      const seen =
+        new Set<string>();
+
+      for (
+        const court1Players of combinations4
+      ) {
+        const court1Set =
+          new Set(court1Players);
+
+        const court2Players =
+          players.filter(
+            (player) =>
+              !court1Set.has(player)
+          );
+
+        /*
+         * Evitiamo di generare due volte
+         * la stessa divisione dei campi.
+         */
+        const court1PlayersSorted = [
+          ...court1Players,
+        ].sort();
+
+        const court2PlayersSorted = [
+          ...court2Players,
+        ].sort();
+
+        if (
+          court1PlayersSorted.join("|") >
+          court2PlayersSorted.join("|")
+        ) {
+          continue;
+        }
+
+        for (
+          const court1 of courtArrangements(
+            court1Players
+          )
+        ) {
+          for (
+            const court2 of courtArrangements(
+              court2Players
+            )
+          ) {
+            const courts = [
+              court1,
+              court2,
+            ];
+
+            const key =
+              arrangementKey(courts);
+
+            if (seen.has(key)) {
+              continue;
+            }
+
+            seen.add(key);
+
+            allArrangements.push({
+              courts,
+              key,
+              score:
+                scoreCourt(court1) +
+                scoreCourt(court2),
+            });
+          }
+        }
+      }
+
+      /*
+       * Migliori configurazioni secondo
+       * lo storico.
+       */
+      allArrangements.sort(
+        (a, b) =>
+          a.score - b.score
+      );
+
+      /*
+       * Configurazione attuale.
+       */
+      const currentCourts =
+        courts.map(
+          (court) =>
+            court.players.filter(
+              (
+                id
+              ): id is string =>
+                Boolean(id)
+            )
+        );
+
+      let currentKey:
+        string | null = null;
+
+      if (
+        currentCourts.length === 2 &&
+        currentCourts[0].length === 4 &&
+        currentCourts[1].length === 4
+      ) {
+        currentKey =
+          arrangementKey(
+            currentCourts
+          );
+      }
+
+      /*
+       * Escludiamo la configurazione
+       * attualmente mostrata.
+       */
+      const alternatives =
+        allArrangements.filter(
+          (item) =>
+            item.key !== currentKey
+        );
+
+      /*
+       * Prendiamo alcune delle migliori
+       * configurazioni realmente diverse.
+       *
+       * Non sono semplici rimescolamenti:
+       * cambiano realmente le coppie.
+       */
+      const candidates =
+        alternatives.length > 0
+          ? alternatives.slice(
+              0,
+              Math.min(
+                12,
+                alternatives.length
+              )
+            )
+          : allArrangements.slice(
+              0,
+              Math.min(
+                12,
+                allArrangements.length
+              )
+            );
+
+      if (
+        candidates.length === 0
+      ) {
+        return;
+      }
+
+      const chosen =
+        candidates[
+          Math.floor(
+            Math.random() *
+              candidates.length
+          )
+        ].courts;
+
+      setCourts([
+        {
+          id:
+            courts[0]?.id ||
+            `court-${Date.now()}-1`,
+          players: [
+            chosen[0][0],
+            chosen[0][1],
+            chosen[0][2],
+            chosen[0][3],
+          ],
+          sets:
+            courts[0]?.sets ||
+            createSets(),
+          comment:
+            courts[0]?.comment ||
+            "",
+        },
+        {
           id:
             courts[1]?.id ||
             `court-${Date.now()}-2`,
           players: [
-            playersForCourt2[0],
-            playersForCourt2[1],
-            playersForCourt2[2],
-            playersForCourt2[3],
+            chosen[1][0],
+            chosen[1][1],
+            chosen[1][2],
+            chosen[1][3],
           ],
           sets:
             courts[1]?.sets ||
             createSets(),
           comment:
-            courts[1]?.comment || "",
-        });
-      }
+            courts[1]?.comment ||
+            "",
+        },
+      ]);
+
+    } catch (error) {
+      console.error(
+        "Errore generazione abbinamenti:",
+        error
+      );
+
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Non riesco a generare gli abbinamenti."
+      );
     }
-
-    setCourts(newCourts);
-    setMessage("");
-    return;
   }
 
- if (mode === "court2") {
-  if (courts.length < 2) {
-    return;
-  }
-
-  const currentPlayers =
-    courts[1].players.filter(
-      (id): id is string =>
-        Boolean(id)
-    );
-
-  if (currentPlayers.length !== 4) {
-    return;
-  }
-
-  let shuffled = [...currentPlayers];
-
-  // Continua a rimescolare finché
-  // non cambia davvero la composizione delle coppie.
-  let attempts = 0;
-
-  while (
-    shuffled[0] === currentPlayers[0] &&
-    shuffled[1] === currentPlayers[1] &&
-    shuffled[2] === currentPlayers[2] &&
-    shuffled[3] === currentPlayers[3] &&
-    attempts < 20
-  ) {
-    shuffled = [...currentPlayers].sort(
-      () => Math.random() - 0.5
-    );
-
-    attempts++;
-  }
-
-  setCourts((current) =>
-    current.map(
-      (court, index) =>
-        index === 1
-          ? {
-              ...court,
-              players: [
-                shuffled[0],
-                shuffled[1],
-                shuffled[2],
-                shuffled[3],
-              ],
-            }
-          : court
-    )
-  );
-
-  setMessage("");
-  return;
-}
+  generateBestArrangement();
 }
 
   async function addPlayer() {
@@ -1002,35 +1555,13 @@ function proposePairs(
 
     const fullName = `${firstName} ${lastName}`;
 
-    const {
-      data,
-      error,
-    } = await supabase
-      .from("players")
-      .insert({
-        name: fullName,
-        first_name:
-          firstName,
-        last_name:
-          lastName,
-        email:
-          email || null,
-      })
-      .select(
-        "id, name, first_name, last_name, email"
-      )
-      .single();
-
-    if (error) {
-      console.error(error);
-      setMessage(
-        error.message
+        try {
+      const data = await createPlayer(
+        firstName,
+        lastName,
+        email
       );
-      setAddingPlayer(false);
-      return;
-    }
 
-    if (data) {
       setPlayers(
         (current) =>
           [
@@ -1039,14 +1570,10 @@ function proposePairs(
           ].sort(
             (a, b) => {
               const appearancesA =
-                playerAppearances[
-                  a.id
-                ] || 0;
+                playerAppearances[a.id] || 0;
 
               const appearancesB =
-                playerAppearances[
-                  b.id
-                ] || 0;
+                playerAppearances[b.id] || 0;
 
               if (
                 appearancesB !==
@@ -1082,9 +1609,29 @@ function proposePairs(
           [data.id]: 0,
         })
       );
-    }
 
-    setNewFirstName("");
+      setNewFirstName("");
+      setNewLastName("");
+      setNewEmail("");
+      setShowAddPlayer(false);
+
+      setMessage(
+        "Giocatore aggiunto correttamente."
+      );
+    } catch (error) {
+      console.error(
+        "Errore aggiunta giocatore:",
+        error
+      );
+
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Errore nel salvataggio del giocatore."
+      );
+    } finally {
+      setAddingPlayer(false);
+    }
     setNewLastName("");
     setNewEmail("");
     setShowAddPlayer(false);
@@ -1169,19 +1716,21 @@ function proposePairs(
     validateBeforeSave();
 
   if (validationError) {
-    setMessage(validationError);
-    return;
-  }
+  setMessage(validationError);
+  return;
+}
 
-  savingRef.current = true;
-  setSaving(true);
-  setMessage("");
+savingRef.current = true;
+setSaving(true);
+setMessage("");
 
-  try {
-    const today =
-      new Date().toLocaleDateString(
-        "en-CA"
-      );
+let permissionWarning = false;
+
+try {
+  const today =
+    new Date().toLocaleDateString(
+      "en-CA"
+    );
 
     // Cerchiamo la giornata di oggi.
     const {
@@ -1273,20 +1822,24 @@ function proposePairs(
       if (!hasAnySet) {
         continue;
       }
+      const courtNumber = index + 1;
+            // Una partita già caricata dal database ha
+      // come id quello reale della partita.
+      // Un campo ancora da salvare ha invece un
+      // id provvisorio che inizia con "court-".
+     const existingMatchId =
+  court.id.startsWith("court-")
+    ? court.id.substring(6)
+    : court.id;
 
-      const courtNumber =
-        index + 1;
-
-      // Se questa partita è già stata salvata,
-      // non la duplichiamo.
-      const alreadySaved =
-        (existingMatches || []).some(
-          (match) =>
-            match.court ===
-            courtNumber
-        );
+const alreadySaved =
+  (existingMatches || []).some(
+    (match) =>
+      match.id === existingMatchId
+  );
 
       if (alreadySaved) {
+        permissionWarning = true;
         continue;
       }
 
@@ -1442,9 +1995,11 @@ function proposePairs(
       }
     }
 
-    setMessage(
-      "Risultati salvati correttamente."
-    );
+   setMessage(
+  permissionWarning
+    ? "⚠️ ATTENZIONE! Non hai i privilegi per modificare il risultato di una partita già registrata."
+    : "Risultati salvati correttamente."
+);
 
   } catch (error) {
     console.error(
@@ -1471,7 +2026,7 @@ function proposePairs(
       <main
         className="matchday-page"
         style={{
-          paddingBottom: 100,
+          paddingBottom: 140,
         }}
       >
         <header className="matchday-header">
@@ -2223,28 +2778,16 @@ function proposePairs(
     flexWrap: "wrap",
   }}
 >
-  {courts.length === 1 && (
+  {(presentPlayers.length === 4 ||
+    presentPlayers.length === 8) && (
     <button
       type="button"
       className="secondary-button"
       onClick={() =>
-        proposePairs("all")
+        proposePairs()
       }
     >
-      ✨ Proponi abbinamenti
-    </button>
-  )}
-
- {presentPlayers.length === 8 &&
-  courts.length >= 2 && (
-    <button
-      type="button"
-      className="secondary-button"
-      onClick={() =>
-        proposePairs("court2")
-      }
-    >
-      ✨ Proponi abbinamenti Campo 2
+      ✨ Abbinali tu
     </button>
   )}
 </div>
@@ -2289,7 +2832,7 @@ function proposePairs(
         style={{
           position:
             "fixed",
-          bottom: 0,
+          bottom: 76,
           left: 0,
           right: 0,
           zIndex: 100,

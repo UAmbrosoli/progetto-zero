@@ -39,6 +39,7 @@ type Player = {
 };
 
 type MatchView = {
+  id: string;
   court: number;
   teamA: string[];
   teamB: string[];
@@ -153,6 +154,10 @@ export default function Storico() {
         sets: setsData,
       } = data;
 
+      console.log(
+  "STORICO MATCHES:",
+  matchesData
+);
       const playerMap =
         createPlayerMap(playersData);
         console.log(
@@ -245,11 +250,12 @@ console.log(
                     );
 
                 return {
-                  court: match.court,
-                  teamA,
-                  teamB,
-                  sets: matchSets,
-                };
+  id: match.id,
+  court: match.court,
+  teamA,
+  teamB,
+  sets: matchSets,
+};
               }
             ),
           };
@@ -733,9 +739,7 @@ console.log(
 
                             return (
                               <div
-                                key={
-                                  match.court
-                                }
+                                key={match.id}
                                 style={{
                                   border:
                                     "1px solid rgba(0,0,0,0.10)",

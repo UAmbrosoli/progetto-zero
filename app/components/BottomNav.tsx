@@ -115,10 +115,7 @@ function Icon({
 export default function BottomNav() {
   const pathname = usePathname();
 
-  if (
-    pathname === "/login" ||
-    pathname === "/imposta-password"
-  ) {
+  if (pathname === "/login") {
     return null;
   }
 

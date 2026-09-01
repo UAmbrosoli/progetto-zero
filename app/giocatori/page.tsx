@@ -7,14 +7,29 @@ import type { Player } from "@/types/player";
 import {
   getPlayers,
   createPlayer,
+  updatePlayer,
   deletePlayer,
 } from "@/services/players";
 
 export default function Giocatori() {
   const [players, setPlayers] = useState<Player[]>([]);
-  const [newFirstName, setNewFirstName] = useState("");
-  const [newLastName, setNewLastName] = useState("");
-  const [newEmail, setNewEmail] = useState("");
+
+  const [newFirstName, setNewFirstName] =
+    useState("");
+  const [newLastName, setNewLastName] =
+    useState("");
+  const [newEmail, setNewEmail] =
+    useState("");
+
+  const [editingPlayer, setEditingPlayer] =
+    useState<Player | null>(null);
+
+  const [editFirstName, setEditFirstName] =
+    useState("");
+  const [editLastName, setEditLastName] =
+    useState("");
+  const [editEmail, setEditEmail] =
+    useState("");
 
   useEffect(() => {
     loadPlayers();
@@ -33,9 +48,12 @@ export default function Giocatori() {
   }
 
   async function addPlayer() {
-    const firstName = newFirstName.trim();
-    const lastName = newLastName.trim();
-    const email = newEmail.trim();
+    const firstName =
+      newFirstName.trim();
+    const lastName =
+      newLastName.trim();
+    const email =
+      newEmail.trim();
 
     if (!firstName || !lastName) {
       alert("Inserisci nome e cognome.");
@@ -88,9 +106,84 @@ export default function Giocatori() {
 
       alert(
         `Errore nel salvataggio.\n\n` +
-        `Messaggio: ${message}\n` +
-        `Codice: ${code}\n` +
-        `Dettagli: ${details}`
+          `Messaggio: ${message}\n` +
+          `Codice: ${code}\n` +
+          `Dettagli: ${details}`
+      );
+    }
+  }
+
+  function startEditing(player: Player) {
+    setEditingPlayer(player);
+
+    setEditFirstName(
+      player.first_name ?? ""
+    );
+
+    setEditLastName(
+      player.last_name ?? ""
+    );
+
+    setEditEmail(
+      player.email ?? ""
+    );
+  }
+
+  function cancelEditing() {
+    setEditingPlayer(null);
+    setEditFirstName("");
+    setEditLastName("");
+    setEditEmail("");
+  }
+
+  async function saveEditedPlayer() {
+    if (!editingPlayer) {
+      return;
+    }
+
+    const firstName =
+      editFirstName.trim();
+    const lastName =
+      editLastName.trim();
+    const email =
+      editEmail.trim();
+
+    if (!firstName || !lastName) {
+      alert("Inserisci nome e cognome.");
+      return;
+    }
+
+    if (!email) {
+      alert("Inserisci anche l'email.");
+      return;
+    }
+
+    try {
+      await updatePlayer(
+        editingPlayer.id,
+        firstName,
+        lastName,
+        email
+      );
+
+      await loadPlayers();
+
+      cancelEditing();
+    } catch (error) {
+      console.error(
+        "Errore nella modifica del giocatore:",
+        error
+      );
+
+      const message =
+        error &&
+        typeof error === "object" &&
+        "message" in error
+          ? String(error.message)
+          : String(error);
+
+      alert(
+        `Errore nella modifica.\n\n${message}`
       );
     }
   }
@@ -103,7 +196,9 @@ export default function Giocatori() {
       `Vuoi eliminare ${name}?`
     );
 
-    if (!conferma) return;
+    if (!conferma) {
+      return;
+    }
 
     try {
       await deletePlayer(id);
@@ -115,7 +210,16 @@ export default function Giocatori() {
         error
       );
 
-      alert("Errore durante l'eliminazione.");
+      const message =
+        error &&
+        typeof error === "object" &&
+        "message" in error
+          ? String(error.message)
+          : String(error);
+
+      alert(
+        `Errore durante l'eliminazione.\n\n${message}`
+      );
     }
   }
 
@@ -142,7 +246,9 @@ export default function Giocatori() {
               PARTECIPANTI
             </p>
 
-            <h2>La rosa del campionato</h2>
+            <h2>
+              La rosa del campionato
+            </h2>
           </div>
 
           <span className="players-count">
@@ -155,7 +261,9 @@ export default function Giocatori() {
             type="text"
             value={newFirstName}
             onChange={(event) =>
-              setNewFirstName(event.target.value)
+              setNewFirstName(
+                event.target.value
+              )
             }
             placeholder="Nome"
           />
@@ -164,7 +272,9 @@ export default function Giocatori() {
             type="text"
             value={newLastName}
             onChange={(event) =>
-              setNewLastName(event.target.value)
+              setNewLastName(
+                event.target.value
+              )
             }
             placeholder="Cognome"
           />
@@ -173,7 +283,9 @@ export default function Giocatori() {
             type="email"
             value={newEmail}
             onChange={(event) =>
-              setNewEmail(event.target.value)
+              setNewEmail(
+                event.target.value
+              )
             }
             placeholder="Email"
           />
@@ -199,55 +311,171 @@ export default function Giocatori() {
 
             <p>
               Inserisci i partecipanti al
-              campionato per iniziare a costruire
-              la stagione.
+              campionato per iniziare a
+              costruire la stagione.
             </p>
           </div>
         ) : (
           <div className="players-list">
-            {players.map((player, index) => {
-              const displayName =
-                `${player.first_name} ${player.last_name}`.trim();
+            {players.map(
+              (player, index) => {
+                const displayName =
+                  `${player.first_name ?? ""} ${
+                    player.last_name ?? ""
+                  }`.trim();
 
-              return (
-                <div
-                  className="player-row"
-                  key={player.id}
-                >
-                  <div className="player-number">
-                    {String(index + 1).padStart(
-                      2,
-                      "0"
+                const isEditing =
+                  editingPlayer?.id ===
+                  player.id;
+
+                return (
+                  <div
+                    className="player-row"
+                    key={player.id}
+                  >
+                    <div className="player-number">
+                      {String(
+                        index + 1
+                      ).padStart(2, "0")}
+                    </div>
+
+                    {isEditing ? (
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection:
+                            "column",
+                          gap: 8,
+                          flex: 1,
+                        }}
+                      >
+                        <input
+                          type="text"
+                          value={
+                            editFirstName
+                          }
+                          onChange={(
+                            event
+                          ) =>
+                            setEditFirstName(
+                              event.target
+                                .value
+                            )
+                          }
+                          placeholder="Nome"
+                        />
+
+                        <input
+                          type="text"
+                          value={
+                            editLastName
+                          }
+                          onChange={(
+                            event
+                          ) =>
+                            setEditLastName(
+                              event.target
+                                .value
+                            )
+                          }
+                          placeholder="Cognome"
+                        />
+
+                        <input
+                          type="email"
+                          value={
+                            editEmail
+                          }
+                          onChange={(
+                            event
+                          ) =>
+                            setEditEmail(
+                              event.target
+                                .value
+                            )
+                          }
+                          placeholder="Email"
+                        />
+
+                        <div
+                          style={{
+                            display: "flex",
+                            gap: 8,
+                            marginTop: 4,
+                          }}
+                        >
+                          <button
+                            className="primary-button"
+                            onClick={
+                              saveEditedPlayer
+                            }
+                          >
+                            Salva
+                          </button>
+
+                          <button
+                            className="remove-button"
+                            onClick={
+                              cancelEditing
+                            }
+                            type="button"
+                          >
+                            Annulla
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <div
+                          style={{
+                            flex: 1,
+                          }}
+                        >
+                          <strong>
+                            {displayName}
+                          </strong>
+
+                          <br />
+
+                          <small>
+                            {
+                              player.email
+                            }
+                          </small>
+                        </div>
+
+                        <button
+                          type="button"
+                          className="secondary-button"
+                          onClick={() =>
+                            startEditing(
+                              player
+                            )
+                          }
+                          aria-label={`Modifica ${displayName}`}
+                        >
+                          Modifica
+                        </button>
+
+                        <button
+                          type="button"
+                          className="remove-button"
+                          onClick={() =>
+                            removePlayer(
+                              player.id,
+                              displayName
+                            )
+                          }
+                          aria-label={`Rimuovi ${displayName}`}
+                        >
+                          ×
+                        </button>
+                      </>
                     )}
                   </div>
-
-                  <div>
-                    <strong>
-                      {displayName}
-                    </strong>
-
-                    <br />
-
-                    <small>
-                      {player.email}
-                    </small>
-                  </div>
-
-                  <button
-                    className="remove-button"
-                    onClick={() =>
-                      removePlayer(
-                        player.id,
-                        displayName
-                      )
-                    }
-                    aria-label={`Rimuovi ${displayName}`}
-                  >
-                    ×
-                  </button>
-                </div>
-              );
-            })}
+                );
+              }
+            )}
           </div>
         )}
       </section>

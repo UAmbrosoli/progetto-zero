@@ -40,6 +40,10 @@ function getSupabaseAdmin() {
   return createClient(url, key);
 }
 
+// =====================================================
+// GET — elenco giocatori
+// =====================================================
+
 export async function GET(request: Request) {
   try {
     const role = getRole(request);
@@ -70,9 +74,7 @@ export async function GET(request: Request) {
       );
 
       return NextResponse.json(
-        {
-          error: error.message,
-        },
+        { error: error.message },
         { status: 500 }
       );
     }
@@ -87,24 +89,28 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         error:
-          "Errore interno del server.",
+          error instanceof Error
+            ? error.message
+            : "Errore interno del server.",
       },
       { status: 500 }
     );
   }
 }
 
+// =====================================================
+// POST — aggiungi giocatore
+// Solo Admin
+// =====================================================
+
 export async function POST(request: Request) {
   try {
     const role = getRole(request);
 
-    if (role !== "admin") {
+    if (!role) {
       return NextResponse.json(
-        {
-          error:
-            "Solo l'Admin può aggiungere giocatori.",
-        },
-        { status: 403 }
+        { error: "Non autenticato." },
+        { status: 401 }
       );
     }
 
@@ -184,7 +190,212 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error:
-          "Errore interno del server.",
+          error instanceof Error
+            ? error.message
+            : "Errore interno del server.",
+      },
+      { status: 500 }
+    );
+  }
+}
+
+// =====================================================
+// PUT — modifica giocatore
+// Solo Admin
+// =====================================================
+
+// =====================================================
+// PUT — modifica giocatore
+// Solo Admin
+// =====================================================
+
+export async function PUT(request: Request) {
+  try {
+    const role = getRole(request);
+
+    if (!role) {
+      return NextResponse.json(
+        { error: "Non autenticato." },
+        { status: 401 }
+      );
+    }
+
+    if (role !== "admin") {
+      return NextResponse.json(
+        {
+          error:
+            "Non hai i privilegi per modificare i giocatori.",
+        },
+        { status: 403 }
+      );
+    }
+
+    const url = new URL(request.url);
+    const id = url.searchParams.get("id");
+
+    if (!id) {
+      return NextResponse.json(
+        {
+          error:
+            "ID del giocatore mancante.",
+        },
+        { status: 400 }
+      );
+    }
+
+    const body = await request.json();
+
+    const first_name =
+      typeof body.first_name === "string"
+        ? body.first_name.trim()
+        : "";
+
+    const last_name =
+      typeof body.last_name === "string"
+        ? body.last_name.trim()
+        : "";
+
+    const email =
+      typeof body.email === "string"
+        ? body.email.trim()
+        : "";
+
+    if (
+      !first_name ||
+      !last_name ||
+      !email
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Nome, cognome ed email sono obbligatori.",
+        },
+        { status: 400 }
+      );
+    }
+
+    const fullName =
+      `${first_name} ${last_name}`.trim();
+
+    const supabase = getSupabaseAdmin();
+
+    const { data, error } = await supabase
+      .from("players")
+      .update({
+        name: fullName,
+        first_name,
+        last_name,
+        email,
+      })
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error(
+        "ERRORE UPDATE PLAYER:",
+        error
+      );
+
+      return NextResponse.json(
+        {
+          error: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code,
+        },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json(data);
+  } catch (error) {
+    console.error(
+      "ERRORE API GIOCATORI PUT:",
+      error
+    );
+
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "Errore interno del server.",
+      },
+      { status: 500 }
+    );
+  }
+}
+
+// =====================================================
+// DELETE — elimina giocatore
+// Solo Admin
+// =====================================================
+
+export async function DELETE(request: Request) {
+  try {
+    const role = getRole(request);
+
+    if (!role) {
+      return NextResponse.json(
+        { error: "Non autenticato." },
+        { status: 401 }
+      );
+    }
+
+    const url = new URL(request.url);
+
+    const id = url.searchParams.get("id");
+
+    if (!id) {
+      return NextResponse.json(
+        {
+          error:
+            "ID del giocatore mancante.",
+        },
+        { status: 400 }
+      );
+    }
+
+    const supabase = getSupabaseAdmin();
+
+    const { error } = await supabase
+      .from("players")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      console.error(
+        "ERRORE DELETE PLAYER:",
+        error
+      );
+
+      return NextResponse.json(
+        {
+          error: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code,
+        },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+    });
+  } catch (error) {
+    console.error(
+      "ERRORE API GIOCATORI DELETE:",
+      error
+    );
+
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "Errore interno del server.",
       },
       { status: 500 }
     );

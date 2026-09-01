@@ -1,10 +1,13 @@
 import type { Player } from "@/types/player";
 
 export async function getPlayers(): Promise<Player[]> {
-  const response = await fetch("/api/giocatori", {
-    method: "GET",
-    cache: "no-store",
-  });
+  const response = await fetch(
+    "/api/giocatori",
+    {
+      method: "GET",
+      cache: "no-store",
+    }
+  );
 
   const result = await response.json();
 
@@ -44,6 +47,39 @@ export async function createPlayer(
     throw new Error(
       result.error ||
         "Errore nel salvataggio del giocatore."
+    );
+  }
+
+  return result as Player;
+}
+
+export async function updatePlayer(
+  id: string,
+  first_name: string,
+  last_name: string,
+  email: string
+): Promise<Player> {
+  const response = await fetch(
+    `/api/giocatori?id=${encodeURIComponent(id)}`,
+    {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        first_name,
+        last_name,
+        email,
+      }),
+    }
+  );
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      result.error ||
+        "Errore nella modifica del giocatore."
     );
   }
 
