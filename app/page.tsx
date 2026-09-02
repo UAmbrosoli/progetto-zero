@@ -133,80 +133,55 @@ function getMatchResult(sets: MatchSet[]) {
 }
 
 async function loadHomeData(): Promise<HomeData> {
-  const [
-    matchdaysResult,
-    matchesResult,
-    playersResult,
-    matchPlayersResult,
-    setsResult,
-    momentsResult,
-  ] = await Promise.all([
-    supabase
-      .from("matchdays")
-      .select("id, match_date")
-      .order("match_date", {
-        ascending: false,
+  const [matchdaysResult, momentsResult, classificaResponse] =
+    await Promise.all([
+      supabase
+        .from("matchdays")
+        .select("id, match_date")
+        .order("match_date", {
+          ascending: false,
+        }),
+
+      supabase
+        .from("memorable_moments")
+        .select("id, match_id, comment, created_at")
+        .order("created_at", {
+          ascending: false,
+        }),
+
+      fetch("/api/classifica", {
+        method: "GET",
+        cache: "no-store",
       }),
-
-    supabase
-      .from("matches")
-      .select("id, matchday_id, court")
-      .order("court"),
-
-    supabase
-      .from("players")
-      .select("id, name, first_name, last_name"),
-
-    supabase
-      .from("match_players")
-      .select("match_id, player_id, team"),
-
-    supabase
-      .from("match_sets")
-      .select(
-        "match_id, set_number, team1_score, team2_score"
-      )
-      .order("set_number"),
-
-    supabase
-      .from("memorable_moments")
-      .select("id, match_id, comment, created_at")
-      .order("created_at", {
-        ascending: false,
-      }),
-  ]);
+    ]);
 
   if (matchdaysResult.error) {
     throw matchdaysResult.error;
-  }
-
-  if (matchesResult.error) {
-    throw matchesResult.error;
-  }
-
-  if (playersResult.error) {
-    throw playersResult.error;
-  }
-
-  if (matchPlayersResult.error) {
-    throw matchPlayersResult.error;
-  }
-
-  if (setsResult.error) {
-    throw setsResult.error;
   }
 
   if (momentsResult.error) {
     throw momentsResult.error;
   }
 
+  if (!classificaResponse.ok) {
+    const errorData = await classificaResponse.json().catch(() => null);
+
+    throw new Error(
+      errorData?.error ||
+        "Errore nel caricamento dei dati della stagione."
+    );
+  }
+
+  const classificaData = await classificaResponse.json();
+
   const matchdays = (matchdaysResult.data || []) as Matchday[];
-  const matches = (matchesResult.data || []) as Match[];
-  const players = (playersResult.data || []) as Player[];
-  const matchPlayers = (matchPlayersResult.data ||
-    []) as MatchPlayer[];
-  const sets = (setsResult.data || []) as MatchSet[];
   const moments = (momentsResult.data || []) as Moment[];
+
+  const players = (classificaData.players || []) as Player[];
+  const matches = (classificaData.matches || []) as Match[];
+  const matchPlayers = (classificaData.matchPlayers ||
+    []) as MatchPlayer[];
+  const sets = (classificaData.sets || []) as MatchSet[];
 
   /*
    * =========================================================
