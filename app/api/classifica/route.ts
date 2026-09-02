@@ -58,7 +58,7 @@ export async function GET(request: Request) {
 
       supabase
         .from("matches")
-        .select("id, court"),
+        .select("id, matchday_id, court"),
 
       supabase
         .from("match_players")

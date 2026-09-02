@@ -720,8 +720,28 @@ export default function Home() {
               </p>
 
               <p className="home-moment-text">
-                “{data.lastMoment.moment.comment}”
-              </p>
+  “
+  {data.lastMoment.moment.comment.length > 350
+    ? `${data.lastMoment.moment.comment.slice(0, 350).trim()}…`
+    : data.lastMoment.moment.comment}
+  ”
+  {data.lastMoment.moment.comment.length > 350 && (
+    <>
+      {" "}
+      <Link
+        href="/momenti"
+        style={{
+          fontSize: 14,
+          fontWeight: 700,
+          textDecoration: "underline",
+          whiteSpace: "nowrap",
+        }}
+      >
+        Leggi tutto
+      </Link>
+    </>
+  )}
+</p>
 
             </div>
 
