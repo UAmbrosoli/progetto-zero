@@ -250,94 +250,47 @@ export default function Momenti() {
         (matchdaysData || []) as Matchday[];
 
       /*
-       * =====================================================
-       * GIOCATORI DELLE PARTITE
-       * =====================================================
-       */
+ * =====================================================
+ * DATI DELLE PARTITE
+ * =====================================================
+ *
+ * Usiamo la stessa API già utilizzata dalla Home,
+ * così giocatori, squadre e set vengono ricostruiti
+ * nello stesso modo in tutta l'App.
+ */
 
-      const {
-        data: matchPlayersData,
-        error: matchPlayersError,
-      } = await supabase
-        .from("match_players")
-        .select(
-          "match_id, player_id, team"
-        )
-        .in("match_id", matchIds);
+const response = await fetch(
+  "/api/classifica",
+  {
+    method: "GET",
+    cache: "no-store",
+  }
+);
 
-      if (matchPlayersError) {
-        throw new Error(
-          matchPlayersError.message
-        );
-      }
+if (!response.ok) {
+  const result =
+    await response.json().catch(
+      () => null
+    );
 
-      const allMatchPlayers =
-        (matchPlayersData || []) as MatchPlayer[];
+  throw new Error(
+    result?.error ||
+      "Impossibile recuperare i dati delle partite."
+  );
+}
 
-      const playerIds = [
-        ...new Set(
-          allMatchPlayers.map(
-            (item) => item.player_id
-          )
-        ),
-      ];
+const classificaData =
+  await response.json();
 
-      /*
-       * =====================================================
-       * GIOCATORI
-       * =====================================================
-       */
+const allPlayers =
+  (classificaData.players || []) as Player[];
 
-      let allPlayers: Player[] = [];
+const allMatchPlayers =
+  (classificaData.matchPlayers || []) as MatchPlayer[];
 
-      if (playerIds.length > 0) {
-        const {
-          data: playersData,
-          error: playersError,
-        } = await supabase
-          .from("players")
-          .select(
-            "id, name, first_name, last_name"
-          )
-          .in("id", playerIds);
+const allMatchSets =
+  (classificaData.sets || []) as MatchSet[];
 
-        if (playersError) {
-          throw new Error(
-            playersError.message
-          );
-        }
-
-        allPlayers =
-          (playersData || []) as Player[];
-      }
-
-      /*
-       * =====================================================
-       * SET
-       * =====================================================
-       */
-
-      const {
-        data: matchSetsData,
-        error: matchSetsError,
-      } = await supabase
-        .from("match_sets")
-        .select(
-          "id, match_id, set_number, team1_score, team2_score"
-        )
-        .in("match_id", matchIds)
-        .order("set_number", {
-          ascending: true,
-        });
-
-      if (matchSetsError) {
-        throw new Error(
-          matchSetsError.message
-        );
-      }
-
-      const allMatchSets =
-        (matchSetsData || []) as MatchSet[];
 
       /*
        * =====================================================
@@ -367,29 +320,37 @@ export default function Momenti() {
           }
 
           const playersForMatch =
-            allMatchPlayers
-              .filter(
-                (item) =>
-                  item.match_id === match.id
-              )
-              .map((item) => {
-                const player =
-                  allPlayers.find(
-                    (p) =>
-                      p.id === item.player_id
-                  );
+  allMatchPlayers
+    .filter(
+      (item) =>
+        item.match_id === match.id
+    )
+    .map((item) => {
+      const player =
+        allPlayers.find(
+          (p) => p.id === item.player_id
+        );
 
-                return {
-                  id: item.player_id,
-                  team: item.team,
-                  name:
-                    player?.first_name ||
-                    player?.name ||
-                    "Giocatore",
-                  last_name:
-                    player?.last_name || "",
-                };
-              });
+      console.log(
+        "MATCH",
+        match.id,
+        "PLAYER_ID",
+        item.player_id,
+        "FOUND",
+        player
+      );
+
+      return {
+        id: item.player_id,
+        team: item.team,
+        name:
+          player?.first_name ||
+          player?.name ||
+          "Giocatore",
+        last_name:
+          player?.last_name || "",
+      };
+    });
 
           const setsForMatch =
             allMatchSets
