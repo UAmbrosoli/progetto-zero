@@ -2,7 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { Player } from "@/types/player";
-import { getPlayers } from "@/services/players";
+import {
+  getPlayers,
+  createPlayer,
+} from "@/services/players";
 
 type Role = "admin" | "player";
 type AvailabilityStatus = "present" | "absent";
@@ -88,6 +91,15 @@ export default function Presenze() {
 
   const [players, setPlayers] =
     useState<Player[]>([]);
+
+  const [newFirstName, setNewFirstName] =
+    useState("");
+
+  const [newLastName, setNewLastName] =
+    useState("");
+
+  const [newEmail, setNewEmail] =
+    useState("");
 
   const [availability, setAvailability] =
     useState<Availability[]>([]);
@@ -190,6 +202,53 @@ export default function Presenze() {
     );
 
     setMessage("");
+  }
+
+  async function addPlayer() {
+    const firstName =
+      newFirstName.trim();
+
+    const lastName =
+      newLastName.trim();
+
+    const email =
+      newEmail.trim();
+
+    if (!firstName || !lastName) {
+      alert("Inserisci nome e cognome.");
+      return;
+    }
+
+    if (!email) {
+      alert("Inserisci anche l'email.");
+      return;
+    }
+
+    try {
+      await createPlayer(
+        firstName,
+        lastName,
+        email
+      );
+
+      const data = await getPlayers();
+      setPlayers(data);
+
+      setNewFirstName("");
+      setNewLastName("");
+      setNewEmail("");
+    } catch (error) {
+      console.error(
+        "Errore nel salvataggio del giocatore:",
+        error
+      );
+
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Errore nel salvataggio del giocatore."
+      );
+    }
   }
 
   function getStatus(
@@ -306,17 +365,6 @@ export default function Presenze() {
         player.id === selectedPlayerId
     );
 
-  const unansweredForSelectedPlayer =
-    selectedPlayerId
-      ? matchDays.filter(
-          (day) =>
-            !getStatus(
-              selectedPlayerId,
-              day.date
-            )
-        ).length
-      : 0;
-
   if (loading) {
     return (
       <main>
@@ -357,443 +405,362 @@ export default function Presenze() {
         </div>
       </header>
 
-      {role === "admin" ? (
-        <>
-          <section className="players-card">
-            <div className="section-heading">
-              <div>
-                <p className="eyebrow">
-                  SITUAZIONE
-                </p>
+      {role !== "admin" && (
+        <section className="players-card">
+          <div className="section-heading">
+            <div>
+              <p className="eyebrow">
+                CHI SEI?
+              </p>
 
-                <h2>
-                  Le prossime giornate
-                </h2>
-              </div>
-
-              <span className="players-count">
-                {players.length} giocatori
-              </span>
+              <h2>
+                Scegli il tuo nome
+              </h2>
             </div>
+          </div>
 
-            <div
+          <select
+            value={selectedPlayerId}
+            onChange={(event) =>
+              selectPlayer(event.target.value)
+            }
+            style={{
+              width: "100%",
+              padding: "14px",
+              borderRadius: 12,
+              border: "1px solid #ddd",
+              fontSize: 16,
+              background: "white",
+            }}
+          >
+            <option value="">
+              Seleziona il tuo nome
+            </option>
+
+            {players.map((player) => (
+              <option
+                key={player.id}
+                value={player.id}
+              >
+                {getPlayerName(player)}
+              </option>
+            ))}
+          </select>
+
+          {selectedPlayer && (
+            <p
               style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: 18,
+                marginTop: 12,
+                marginBottom: 0,
+                opacity: 0.7,
               }}
             >
-              {matchDays.map((day) => {
-                const presentCount =
-                  getCount(
-                    day.date,
-                    "present"
-                  );
+              Ciao{" "}
+              <strong>
+                {selectedPlayer.first_name}
+              </strong>
+              . Qui puoi indicare e modificare la tua
+              disponibilità.
+            </p>
+          )}
+        </section>
+      )}
 
-                const absentCount =
-                  getCount(
-                    day.date,
-                    "absent"
-                  );
+      <>
+        <section className="players-card">
+          <div className="section-heading">
+            <div>
+              <p className="eyebrow">
+                SITUAZIONE
+              </p>
 
-                const unansweredCount =
-                  getUnansweredCount(
-                    day.date
-                  );
+              <h2>
+                Le prossime giornate
+              </h2>
+            </div>
 
-                return (
-                  <div
-                    key={day.date}
+            <span className="players-count">
+              {players.length} giocatori
+            </span>
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 18,
+            }}
+          >
+            {matchDays.map((day) => {
+              const presentCount =
+                getCount(
+                  day.date,
+                  "present"
+                );
+
+              const absentCount =
+                getCount(
+                  day.date,
+                  "absent"
+                );
+
+              const unansweredCount =
+                getUnansweredCount(
+                  day.date
+                );
+
+              return (
+                <div
+                  key={day.date}
+                  style={{
+                    border:
+                      "1px solid #e5e5e5",
+                    borderRadius: 16,
+                    padding: 16,
+                  }}
+                >
+                  <strong
                     style={{
-                      border:
-                        "1px solid #e5e5e5",
-                      borderRadius: 16,
-                      padding: 16,
+                      textTransform:
+                        "capitalize",
                     }}
                   >
-                    <strong
-                      style={{
-                        textTransform:
-                          "capitalize",
-                      }}
-                    >
-                      {day.label}
-                    </strong>
+                    {day.label}
+                  </strong>
 
-                    <div
-                      style={{
-                        display: "flex",
-                        gap: 16,
-                        marginTop: 10,
-                        marginBottom: 14,
-                        flexWrap:
-                          "wrap",
-                      }}
-                    >
-                      <span>
-                        <strong>
-                          {presentCount}
-                        </strong>{" "}
-                        sì
-                      </span>
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: 16,
+                      marginTop: 10,
+                      marginBottom: 14,
+                      flexWrap:
+                        "wrap",
+                    }}
+                  >
+                    <span>
+                      <strong>
+                        {presentCount}
+                      </strong>{" "}
+                      sì
+                    </span>
 
-                      <span>
-                        <strong>
-                          {absentCount}
-                        </strong>{" "}
-                        no
-                      </span>
+                    <span>
+                      <strong>
+                        {absentCount}
+                      </strong>{" "}
+                      no
+                    </span>
 
-                      <span>
-                        <strong>
-                          {unansweredCount}
-                        </strong>{" "}
-                        da rispondere
-                      </span>
-                    </div>
+                    <span>
+                      <strong>
+                        {unansweredCount}
+                      </strong>{" "}
+                      da rispondere
+                    </span>
+                  </div>
 
-                    <div
-                      style={{
-                        display: "flex",
-                        flexDirection:
-                          "column",
-                        gap: 8,
-                      }}
-                    >
-                      {players.map(
-                        (player) => {
-                          const status =
-                            getStatus(
-                              player.id,
-                              day.date
-                            );
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection:
+                        "column",
+                      gap: 8,
+                    }}
+                  >
+                    {players.map(
+                      (player) => {
+                        const status =
+                          getStatus(
+                            player.id,
+                            day.date
+                          );
 
-                          return (
+                        return (
+                          <div
+                            key={
+                              player.id
+                            }
+                            style={{
+                              display:
+                                "flex",
+                              justifyContent:
+                                "space-between",
+                              alignItems:
+                                "center",
+                              gap: 10,
+                            }}
+                          >
+                            <span>
+                              {getPlayerName(
+                                player
+                              )}
+                            </span>
+
                             <div
-                              key={
-                                player.id
-                              }
                               style={{
                                 display:
                                   "flex",
-                                justifyContent:
-                                  "space-between",
                                 alignItems:
                                   "center",
-                                gap: 10,
+                                gap: 8,
                               }}
                             >
-                              <span>
-                                {getPlayerName(
-                                  player
-                                )}
-                              </span>
-
-                              <div
+                              <span
                                 style={{
-                                  display:
-                                    "flex",
-                                  gap: 6,
+                                  minWidth: 18,
+                                  textAlign:
+                                    "center",
+                                  fontWeight: 700,
                                 }}
                               >
-                                <button
-                                  type="button"
-                                  className="primary-button"
-                                  disabled={
-                                    saving !==
-                                    null
-                                  }
-                                  onClick={() =>
-                                    saveAvailability(
-                                      player.id,
-                                      day.date,
-                                      "present"
-                                    )
-                                  }
-                                  style={{
-                                    opacity:
-                                      status ===
-                                      "present"
-                                        ? 1
-                                        : 0.55,
-                                    padding:
-                                      "6px 10px",
-                                    fontSize:
-                                      12,
-                                  }}
-                                >
-                                  {saving ===
-                                  `${player.id}-${day.date}-present`
-                                    ? "..."
-                                    : "✓"}
-                                </button>
+                                {status ===
+                                "present"
+                                  ? "✓"
+                                  : status ===
+                                    "absent"
+                                  ? "✕"
+                                  : "—"}
+                              </span>
 
-                                <button
-                                  type="button"
-                                  className="secondary-button"
-                                  disabled={
-                                    saving !==
-                                    null
-                                  }
-                                  onClick={() =>
-                                    saveAvailability(
-                                      player.id,
-                                      day.date,
-                                      "absent"
-                                    )
-                                  }
+                              {(role === "admin" ||
+                                player.id ===
+                                  selectedPlayerId) && (
+                                <div
                                   style={{
-                                    opacity:
-                                      status ===
-                                      "absent"
-                                        ? 1
-                                        : 0.55,
-                                    padding:
-                                      "6px 10px",
-                                    fontSize:
-                                      12,
+                                    display:
+                                      "flex",
+                                    gap: 6,
                                   }}
                                 >
-                                  {saving ===
-                                  `${player.id}-${day.date}-absent`
-                                    ? "..."
-                                    : "X"}
-                                </button>
-                              </div>
+                                  <button
+                                    type="button"
+                                    className="primary-button"
+                                    disabled={
+                                      saving !==
+                                      null
+                                    }
+                                    onClick={() =>
+                                      saveAvailability(
+                                        player.id,
+                                        day.date,
+                                        "present"
+                                      )
+                                    }
+                                    style={{
+                                      opacity:
+                                        status ===
+                                        "present"
+                                          ? 1
+                                          : 0.55,
+                                      padding:
+                                        "6px 10px",
+                                      fontSize:
+                                        12,
+                                    }}
+                                  >
+                                    ✓
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    className="secondary-button"
+                                    disabled={
+                                      saving !==
+                                      null
+                                    }
+                                    onClick={() =>
+                                      saveAvailability(
+                                        player.id,
+                                        day.date,
+                                        "absent"
+                                      )
+                                    }
+                                    style={{
+                                      opacity:
+                                        status ===
+                                        "absent"
+                                          ? 1
+                                          : 0.55,
+                                      padding:
+                                        "6px 10px",
+                                      fontSize:
+                                        12,
+                                    }}
+                                  >
+                                    X
+                                  </button>
+                                </div>
+                              )}
                             </div>
-                          );
-                        }
-                      )}
-                    </div>
+                          </div>
+                        );
+                      }
+                    )}
                   </div>
-                );
-              })}
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        <section className="players-card">
+          <div className="section-heading">
+            <div>
+              <p className="eyebrow">
+                NUOVO GIOCATORE
+              </p>
+
+              <h2>
+                Aggiungi giocatore
+              </h2>
             </div>
-          </section>
+          </div>
 
-          {message && (
-            <section className="players-card">
-              <p>{message}</p>
-            </section>
-          )}
-        </>
-      ) : (
-        <>
-          <section className="players-card">
-            <div className="section-heading">
-              <div>
-                <p className="eyebrow">
-                  CHI SEI?
-                </p>
-
-                <h2>
-                  Scegli il tuo nome
-                </h2>
-              </div>
-            </div>
-
-            <select
-              value={selectedPlayerId}
+          <div className="add-player">
+            <input
+              type="text"
+              value={newFirstName}
               onChange={(event) =>
-                selectPlayer(
-                  event.target.value
-                )
+                setNewFirstName(event.target.value)
               }
-              style={{
-                width: "100%",
-                padding: "14px",
-                borderRadius: 12,
-                border:
-                  "1px solid #ddd",
-                fontSize: 16,
-                background: "white",
-              }}
+              placeholder="Nome"
+            />
+
+            <input
+              type="text"
+              value={newLastName}
+              onChange={(event) =>
+                setNewLastName(event.target.value)
+              }
+              placeholder="Cognome"
+            />
+
+            <input
+              type="email"
+              value={newEmail}
+              onChange={(event) =>
+                setNewEmail(event.target.value)
+              }
+              placeholder="Email"
+            />
+
+            <button
+              className="primary-button add-button"
+              onClick={addPlayer}
             >
-              <option value="">
-                Seleziona il tuo nome
-              </option>
+              Aggiungi
+              <span>+</span>
+            </button>
+          </div>
+        </section>
 
-              {players.map((player) => (
-                <option
-                  key={player.id}
-                  value={player.id}
-                >
-                  {getPlayerName(player)}
-                </option>
-              ))}
-            </select>
-
-            {selectedPlayer && (
-              <p
-                style={{
-                  marginTop: 12,
-                  marginBottom: 0,
-                  opacity: 0.7,
-                }}
-              >
-                Ciao{" "}
-                <strong>
-                  {
-                    selectedPlayer.first_name
-                  }
-                </strong>
-                . Indica la tua
-                disponibilità per i
-                prossimi martedì.
-              </p>
-            )}
-          </section>
-
+        {message && (
           <section className="players-card">
-            <div className="section-heading">
-              <div>
-                <p className="eyebrow">
-                  DISPONIBILITÀ
-                </p>
-
-                <h2>
-                  I prossimi martedì
-                </h2>
-              </div>
-            </div>
-
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: 14,
-              }}
-            >
-              {matchDays.map((day) => {
-                const status =
-                  selectedPlayerId
-                    ? getStatus(
-                        selectedPlayerId,
-                        day.date
-                      )
-                    : null;
-
-                return (
-                  <div
-                    key={day.date}
-                    style={{
-                      border:
-                        "1px solid #e5e5e5",
-                      borderRadius: 16,
-                      padding: 16,
-                    }}
-                  >
-                    <strong
-                      style={{
-                        textTransform:
-                          "capitalize",
-                      }}
-                    >
-                      {day.label}
-                    </strong>
-
-                    <div
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns:
-                          "1fr 1fr",
-                        gap: 8,
-                        marginTop: 12,
-                      }}
-                    >
-                      <button
-                        type="button"
-                        className="primary-button"
-                        disabled={
-                          !selectedPlayerId ||
-                          saving !== null
-                        }
-                        onClick={() =>
-                          saveAvailability(
-                            selectedPlayerId,
-                            day.date,
-                            "present"
-                          )
-                        }
-                        style={{
-                          opacity:
-                            status ===
-                            "present"
-                              ? 1
-                              : 0.7,
-                        }}
-                      >
-                        {saving ===
-                        `${selectedPlayerId}-${day.date}-present`
-                          ? "Salvo..."
-                          : "✓"}
-                      </button>
-
-                      <button
-                        type="button"
-                        className="secondary-button"
-                        disabled={
-                          !selectedPlayerId ||
-                          saving !== null
-                        }
-                        onClick={() =>
-                          saveAvailability(
-                            selectedPlayerId,
-                            day.date,
-                            "absent"
-                          )
-                        }
-                        style={{
-                          opacity:
-                            status ===
-                            "absent"
-                              ? 1
-                              : 0.7,
-                        }}
-                      >
-                        {saving ===
-                        `${selectedPlayerId}-${day.date}-absent`
-                          ? "Salvo..."
-                          : "X"}
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {selectedPlayerId &&
-              unansweredForSelectedPlayer >
-                0 && (
-                <p
-                  style={{
-                    marginTop: 16,
-                    marginBottom: 0,
-                  }}
-                >
-                  Ti mancano ancora{" "}
-                  <strong>
-                    {
-                      unansweredForSelectedPlayer
-                    }
-                  </strong>{" "}
-                  risposte.
-                </p>
-              )}
-
-            {message && (
-              <p
-                style={{
-                  marginTop: 16,
-                  marginBottom: 0,
-                }}
-              >
-                {message}
-              </p>
-            )}
+            <p>{message}</p>
           </section>
-        </>
-      )}
+        )}
+      </>
     </main>
   );
 }

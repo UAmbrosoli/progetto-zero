@@ -42,6 +42,12 @@ type Moment = {
   created_at: string;
 };
 
+type Availability = {
+  player_id: string;
+  match_date: string;
+  status: "present" | "absent";
+};
+
 type RankingPlayer = {
   player: Player;
   points: number;
@@ -52,6 +58,9 @@ type RankingPlayer = {
 
 type HomeData = {
   leader: RankingPlayer | null;
+  presentCount: number;
+  absentCount: number;
+  unansweredCount: number;
   leaders: RankingPlayer[];
   ranking: RankingPlayer[];
   matchdaysPlayed: number;
@@ -131,29 +140,56 @@ function getMatchResult(sets: MatchSet[]) {
 
   return "D";
 }
+function getNextTuesday() {
+  const today = new Date();
+  const day = today.getDay();
 
+  const daysUntilTuesday =
+    day === 2 ? 7 : (2 - day + 7) % 7;
+
+  const nextTuesday = new Date(today);
+  nextTuesday.setDate(
+    today.getDate() + daysUntilTuesday
+  );
+
+  return nextTuesday.toISOString().slice(0, 10);
+}
 async function loadHomeData(): Promise<HomeData> {
-  const [matchdaysResult, momentsResult, classificaResponse] =
-    await Promise.all([
-      supabase
-        .from("matchdays")
-        .select("id, match_date")
-        .order("match_date", {
-          ascending: false,
-        }),
+  const nextTuesday = getNextTuesday();
 
-      supabase
-        .from("memorable_moments")
-        .select("id, match_id, comment, created_at")
-        .order("created_at", {
-          ascending: false,
-        }),
+  const [
+    matchdaysResult,
+    momentsResult,
+    classificaResponse,
+    availabilityResponse,
+  ] = await Promise.all([
+    supabase
+      .from("matchdays")
+      .select("id, match_date")
+      .order("match_date", {
+        ascending: false,
+      }),
 
-      fetch("/api/classifica", {
+    supabase
+      .from("memorable_moments")
+      .select("id, match_id, comment, created_at")
+      .order("created_at", {
+        ascending: false,
+      }),
+
+    fetch("/api/classifica", {
+      method: "GET",
+      cache: "no-store",
+    }),
+
+    fetch(
+      `/api/presenze?dates=${nextTuesday}`,
+      {
         method: "GET",
         cache: "no-store",
-      }),
-    ]);
+      }
+    ),
+  ]);
 
   if (matchdaysResult.error) {
     throw matchdaysResult.error;
@@ -174,6 +210,13 @@ async function loadHomeData(): Promise<HomeData> {
 
   const classificaData = await classificaResponse.json();
 
+  const availabilityData = availabilityResponse.ok
+  ? await availabilityResponse.json()
+  : { availability: [] };
+
+const availability =
+  (availabilityData.availability || []) as Availability[];
+
   const matchdays = (matchdaysResult.data || []) as Matchday[];
   const moments = (momentsResult.data || []) as Moment[];
 
@@ -182,6 +225,15 @@ async function loadHomeData(): Promise<HomeData> {
   const matchPlayers = (classificaData.matchPlayers ||
     []) as MatchPlayer[];
   const sets = (classificaData.sets || []) as MatchSet[];
+  const presentCount = availability.filter(
+  (item) => item.status === "present"
+).length;
+
+const absentCount = availability.filter(
+  (item) => item.status === "absent"
+).length;
+
+const unansweredCount = 8 - presentCount - absentCount;
 
   /*
    * =========================================================
@@ -330,13 +382,16 @@ async function loadHomeData(): Promise<HomeData> {
   }
 
   return {
-    leader,
-    leaders,
-    ranking,
-    matchdaysPlayed: matchdays.length,
-    totalMatches: matches.length,
-    lastMoment,
-  };
+  leader,
+  presentCount,
+  absentCount,
+  unansweredCount,
+  leaders,
+  ranking,
+  matchdaysPlayed: matchdays.length,
+  totalMatches: matches.length,
+  lastMoment,
+};
 }
 
 function formatDate(date: string) {
@@ -454,6 +509,7 @@ export default function Home() {
     useState<ReturnType<typeof getCalendarDays> | null>(null);
 
   const [data, setData] = useState<HomeData | null>(null);
+  const nextTuesday = getNextTuesday();
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -543,18 +599,65 @@ export default function Home() {
           </div>
 
           <p className="eyebrow">
-            PADEL ON TUESDAY
-          </p>
+  PADEL ON TUESDAY
+</p>
 
-          <h1>
-            È
-            <br />
-            martedì.
-          </h1>
+<h1>
+  Road to
+  <br />
+  Tuesday
+</h1>
+<div className="home-road-wrapper">
 
-          <p className="home-hero-season">
-            STAGIONE 2026–27
-          </p>
+  <div className="home-road-bar">
+
+    <div
+      className="home-road-present"
+      style={{
+        width: `${(data?.presentCount ?? 0) / 8 * 100}%`,
+      }}
+    />
+
+    <div
+      className="home-road-open"
+      style={{
+        width: `${(data?.unansweredCount ?? 0) / 8 * 100}%`,
+      }}
+    />
+
+    <div
+      className="home-road-absent"
+      style={{
+        width: `${(data?.absentCount ?? 0) / 8 * 100}%`,
+      }}
+    />
+
+  </div>
+
+  <div className="home-road-counts">
+
+    <span className="home-road-present-count">
+      ✓ {data?.presentCount ?? 0}
+    </span>
+
+    <span className="home-road-open-count">
+      + {data?.unansweredCount ?? 0}
+    </span>
+
+    <span className="home-road-absent-count">
+      ✕ {data?.absentCount ?? 0}
+    </span>
+
+  </div>
+
+</div>
+
+          <Link
+  href="/presenze"
+  className="home-hero-presenze"
+>
+  →
+</Link>
 
           <div className="home-hero-ball">
             🎾
