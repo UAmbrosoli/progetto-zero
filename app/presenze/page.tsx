@@ -225,11 +225,13 @@ export default function Presenze() {
     }
 
     try {
-      await createPlayer(
-        firstName,
-        lastName,
-        email
-      );
+  await createPlayer(
+    firstName,
+    lastName,
+    email,
+    true
+  );
+
 
       const data = await getPlayers();
       setPlayers(data);
@@ -434,18 +436,20 @@ export default function Presenze() {
             }}
           >
             <option value="">
-              Seleziona il tuo nome
-            </option>
+  Seleziona il tuo nome
+</option>
 
-            {players.map((player) => (
-              <option
-                key={player.id}
-                value={player.id}
-              >
-                {getPlayerName(player)}
-              </option>
-            ))}
-          </select>
+{players
+  .filter((player) => !player.is_external)
+  .map((player) => (
+    <option
+      key={player.id}
+      value={player.id}
+    >
+      {getPlayerName(player)}
+    </option>
+  ))}
+</select>
 
           {selectedPlayer && (
             <p
@@ -592,10 +596,18 @@ export default function Presenze() {
                             }}
                           >
                             <span>
-                              {getPlayerName(
-                                player
-                              )}
-                            </span>
+  {getPlayerName(player)}
+  {player.is_external && (
+    <small
+      style={{
+        marginLeft: 8,
+        opacity: 0.55,
+      }}
+    >
+      · esterno
+    </small>
+  )}
+</span>
 
                             <div
                               style={{
@@ -624,8 +636,8 @@ export default function Presenze() {
                               </span>
 
                               {(role === "admin" ||
-                                player.id ===
-                                  selectedPlayerId) && (
+  player.id === selectedPlayerId ||
+  player.is_external) && (
                                 <div
                                   style={{
                                     display:

@@ -131,15 +131,24 @@ export async function POST(request: Request) {
         ? body.email.trim()
         : "";
 
-    if (
-      !first_name ||
-      !last_name ||
-      !email
-    ) {
+    const is_external =
+      body.is_external === true;
+
+    if (!first_name || !last_name) {
       return NextResponse.json(
         {
           error:
-            "Nome, cognome ed email sono obbligatori.",
+            "Nome e cognome sono obbligatori.",
+        },
+        { status: 400 }
+      );
+    }
+
+    if (!is_external && !email) {
+      return NextResponse.json(
+        {
+          error:
+            "Per un giocatore del gruppo è obbligatoria l'email.",
         },
         { status: 400 }
       );
@@ -158,6 +167,7 @@ export async function POST(request: Request) {
           first_name,
           last_name,
           email,
+          is_external,
         },
       ])
       .select()

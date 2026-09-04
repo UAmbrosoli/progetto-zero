@@ -1556,12 +1556,12 @@ function proposePairs() {
     const fullName = `${firstName} ${lastName}`;
 
         try {
-      const data = await createPlayer(
-        firstName,
-        lastName,
-        email
-      );
-
+const data = await createPlayer(
+  firstName,
+  lastName,
+  email,
+  false
+);
       setPlayers(
         (current) =>
           [

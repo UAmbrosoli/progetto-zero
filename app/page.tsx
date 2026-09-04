@@ -87,6 +87,9 @@ function getCalendarDays() {
   const start = Math.max(1, currentDay - 5);
   const end = Math.min(daysInMonth, currentDay + 5);
 
+  const daysUntilTuesday = (2 - today.getDay() + 7) % 7;
+const nextTuesdayDay = currentDay + daysUntilTuesday;
+
   const days = [];
 
   for (let day = start; day <= end; day++) {
@@ -100,6 +103,7 @@ function getCalendarDays() {
         .format(date)
         .replace(".", ""),
       isToday: day === currentDay,
+isNextTuesday: day === nextTuesdayDay,
     });
   }
 
@@ -578,11 +582,15 @@ export default function Home() {
 
                 {calendar.days.map((item) => (
                   <div
-                    key={item.day}
-                    className={`home-calendar-day ${
-                      item.isToday ? "today" : ""
-                    }`}
-                  >
+  key={item.day}
+  className={`home-calendar-day ${
+    item.isNextTuesday
+      ? "next-tuesday"
+      : item.isToday
+      ? "today"
+      : ""
+  }`}
+>
                     <span className="home-calendar-weekday">
                       {item.weekday}
                     </span>
@@ -611,42 +619,30 @@ export default function Home() {
 
   <div className="home-road-bar">
 
-    <div
-      className="home-road-present"
-      style={{
-        width: `${(data?.presentCount ?? 0) / 8 * 100}%`,
-      }}
-    />
+    {Array.from({ length: 8 }).map((_, index) => {
+      const present = data?.presentCount ?? 0;
+      const absent = data?.absentCount ?? 0;
 
-    <div
-      className="home-road-open"
-      style={{
-        width: `${(data?.unansweredCount ?? 0) / 8 * 100}%`,
-      }}
-    />
+      let className = "home-road-open";
+      let label = "?";
 
-    <div
-      className="home-road-absent"
-      style={{
-        width: `${(data?.absentCount ?? 0) / 8 * 100}%`,
-      }}
-    />
+      if (index < present) {
+        className = "home-road-present";
+        label = "SI";
+      } else if (index < present + absent) {
+        className = "home-road-absent";
+        label = "NO";
+      }
 
-  </div>
-
-  <div className="home-road-counts">
-
-    <span className="home-road-present-count">
-      ✓ {data?.presentCount ?? 0}
-    </span>
-
-    <span className="home-road-open-count">
-      + {data?.unansweredCount ?? 0}
-    </span>
-
-    <span className="home-road-absent-count">
-      ✕ {data?.absentCount ?? 0}
-    </span>
+      return (
+        <div
+          key={index}
+          className={className}
+        >
+          {label}
+        </div>
+      );
+    })}
 
   </div>
 
@@ -656,7 +652,8 @@ export default function Home() {
   href="/presenze"
   className="home-hero-presenze"
 >
-  →
+  <span>Guarda e segna</span>
+  <span>→</span>
 </Link>
 
           <div className="home-hero-ball">
@@ -665,42 +662,6 @@ export default function Home() {
 
         </div>
       </section>
-
-
-      {/* =====================================================
-    01 — NUOVA GIORNATA
-    ===================================================== */}
-
-<section className="home-section home-section-matchday">
-
-  <div className="home-section-inner">
-
-    <div className="home-matchday-content">
-
-      <div>
-        <p className="home-matchday-kicker">
-          OGGI
-        </p>
-
-        <h2>
-          Nuova
-          <br />
-          giornata
-        </h2>
-      </div>
-
-     <Link
-  href="/nuova-giornata"
-  className="home-section-action"
->
-  <span>→</span>
-</Link>
-
-    </div>
-
-  </div>
-
-</section>
 
 
 {/* =====================================================

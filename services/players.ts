@@ -24,7 +24,8 @@ export async function getPlayers(): Promise<Player[]> {
 export async function createPlayer(
   first_name: string,
   last_name: string,
-  email: string
+  email: string,
+  is_external: boolean
 ): Promise<Player> {
   const response = await fetch(
     "/api/giocatori",
@@ -37,6 +38,7 @@ export async function createPlayer(
         first_name,
         last_name,
         email,
+        is_external,
       }),
     }
   );

@@ -67,10 +67,11 @@ export default function Giocatori() {
 
     try {
       await createPlayer(
-        firstName,
-        lastName,
-        email
-      );
+  firstName,
+  lastName,
+  email,
+  true
+);
 
       await loadPlayers();
 

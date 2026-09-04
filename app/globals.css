@@ -344,30 +344,64 @@ h3 {
   text-transform: uppercase;
 }
 
-.home-calendar-number {
-  font-family: "Space Grotesk", sans-serif;
-  font-size: 18px;
-  font-weight: 600;
-  line-height: 1;
-  letter-spacing: -0.04em;
-}
-
 .home-calendar-day.today {
+
   flex-basis: 54px;
+
   width: 54px;
+
   height: 54px;
+
   border-radius: 50%;
-  background: var(--accent);
+
+  background: rgba(216, 255, 62, 0.28);
+
   color: var(--foreground);
+
   opacity: 1;
+
 }
 
 .home-calendar-day.today .home-calendar-weekday {
+
   color: rgba(23, 23, 23, 0.55);
+
 }
 
 .home-calendar-day.today .home-calendar-number {
+
   font-size: 20px;
+
+}
+
+.home-calendar-day.next-tuesday {
+
+  flex-basis: 54px;
+
+  width: 54px;
+
+  height: 54px;
+
+  border-radius: 50%;
+
+  background: var(--accent);
+
+  color: var(--foreground);
+
+  opacity: 1;
+
+}
+
+.home-calendar-day.next-tuesday .home-calendar-weekday {
+
+  color: rgba(23, 23, 23, 0.55);
+
+}
+
+.home-calendar-day.next-tuesday .home-calendar-number {
+
+  font-size: 20px;
+
 }
 
 
@@ -463,8 +497,11 @@ h3 {
    --------------------------------------------------------- */
 
 .home-section-title {
-  background: var(--foreground);
-  color: white;
+
+  background: var(--accent);
+
+  color: var(--foreground);
+
 }
 
 .home-section-title .home-section-label {
@@ -1437,4 +1474,63 @@ h3 {
 .head-to-head-empty {
   margin-top: 24px;
   color: var(--muted);
+}
+/* =========================================================
+   HOME — ROAD TO TUESDAY
+   ========================================================= */
+
+.home-road-wrapper {
+  margin-top: 32px;
+}
+
+.home-road-bar {
+  display: grid;
+  grid-template-columns: repeat(8, 42px);
+  gap: 6px;
+  width: fit-content;
+}
+
+.home-road-bar > div {
+  width: 42px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 7px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.home-road-present {
+  background: var(--accent);
+  color: var(--foreground);
+}
+
+.home-road-open {
+  background: #777777;
+  color: white;
+}
+
+.home-road-absent {
+  background: var(--foreground);
+  color: white;
+}
+.home-hero-presenze {
+  display: inline-flex;
+  align-items: center;
+  gap: 140px;
+  margin-top: 22px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid currentColor;
+  color: inherit;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.home-hero-presenze span:last-child {
+  font-size: 30px;
+  line-height: 1;
 }
