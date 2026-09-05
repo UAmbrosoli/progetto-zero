@@ -84,8 +84,8 @@ function getCalendarDays() {
 
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-  const start = Math.max(1, currentDay - 5);
-  const end = Math.min(daysInMonth, currentDay + 5);
+  const start = currentDay;
+  const end = currentDay + 6;
 
   const daysUntilTuesday = (2 - today.getDay() + 7) % 7;
 const nextTuesdayDay = currentDay + daysUntilTuesday;
@@ -586,8 +586,6 @@ export default function Home() {
   className={`home-calendar-day ${
     item.isNextTuesday
       ? "next-tuesday"
-      : item.isToday
-      ? "today"
       : ""
   }`}
 >
