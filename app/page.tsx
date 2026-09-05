@@ -109,7 +109,7 @@ isNextTuesday: day === nextTuesdayDay,
 
   return {
     month: new Intl.DateTimeFormat("it-IT", {
-      month: "long",
+      month: "short",
     }).format(today),
 
     year,
@@ -574,10 +574,10 @@ export default function Home() {
           <div className="home-calendar-hero">
             <div className="home-calendar-row">
 
-              <div className="home-calendar-hero-month">
-                {calendar.month} {calendar.year}
-              </div>
-
+<div className="home-calendar-hero-month">
+  <span>{calendar.month}</span>
+  <span>{calendar.year}</span>
+</div>
               <div className="home-calendar">
 
                 {calendar.days.map((item) => (

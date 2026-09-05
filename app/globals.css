@@ -301,14 +301,27 @@ h3 {
 }
 
 .home-calendar-hero-month {
+
   flex-shrink: 0;
+
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+
   color: rgba(255, 255, 255, 0.55);
+
   font-family: "Space Grotesk", sans-serif;
+
   font-size: 13px;
+
   font-weight: 600;
+
   text-transform: capitalize;
+
   letter-spacing: -0.01em;
-  white-space: nowrap;
+
+  line-height: 1.05;
+
 }
 
 .home-calendar {
@@ -1191,7 +1204,7 @@ h3 {
   }
 
   .home-calendar-hero-month {
-    font-size: 11px;
+    font-size: 12px;
   }
 
   .home-calendar {
