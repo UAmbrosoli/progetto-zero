@@ -706,7 +706,8 @@ export default function Presenze() {
                               </span>
 
                               {(role === "admin" ||
-  player.id === selectedPlayerId) && (
+  player.id === selectedPlayerId ||
+  player.is_external) && (
                                 <div
                                   style={{
                                     display:
