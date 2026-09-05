@@ -25,7 +25,7 @@ export async function createPlayer(
   first_name: string,
   last_name: string,
   email: string,
-  is_external: boolean
+  is_external = false
 ): Promise<Player> {
   const response = await fetch(
     "/api/giocatori",
@@ -59,7 +59,8 @@ export async function updatePlayer(
   id: string,
   first_name: string,
   last_name: string,
-  email: string
+  email: string,
+  is_external = false
 ): Promise<Player> {
   const response = await fetch(
     `/api/giocatori?id=${encodeURIComponent(id)}`,
@@ -72,6 +73,7 @@ export async function updatePlayer(
         first_name,
         last_name,
         email,
+        is_external,
       }),
     }
   );

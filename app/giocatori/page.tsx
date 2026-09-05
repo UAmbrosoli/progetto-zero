@@ -189,6 +189,31 @@ export default function Giocatori() {
     }
   }
 
+  async function toggleExternal(player: Player) {
+    try {
+      await updatePlayer(
+        player.id,
+        player.first_name,
+        player.last_name,
+        player.email,
+        !player.is_external
+      );
+
+      await loadPlayers();
+    } catch (error) {
+      console.error(
+        "Errore nella modifica dello stato del giocatore:",
+        error
+      );
+
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Errore nella modifica dello stato del giocatore."
+      );
+    }
+  }
+
   async function removePlayer(
     id: string,
     name: string
@@ -439,6 +464,14 @@ export default function Giocatori() {
                           <br />
 
                           <small>
+                            {player.is_external
+                              ? "Ospite"
+                              : "Giocatore"}
+                          </small>
+
+                          <br />
+
+                          <small>
                             {
                               player.email
                             }
@@ -456,6 +489,18 @@ export default function Giocatori() {
                           aria-label={`Modifica ${displayName}`}
                         >
                           Modifica
+                        </button>
+
+                        <button
+                          type="button"
+                          className="secondary-button"
+                          onClick={() =>
+                            toggleExternal(player)
+                          }
+                        >
+                          {player.is_external
+                            ? "Rendi giocatore"
+                            : "Rendi ospite"}
                         </button>
 
                         <button
