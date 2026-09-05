@@ -119,6 +119,15 @@ export default function Presenze() {
   const [message, setMessage] =
     useState("");
 
+  const [addingGuestDate, setAddingGuestDate] =
+    useState<string | null>(null);
+
+  const [guestFirstName, setGuestFirstName] =
+    useState("");
+
+  const [guestLastName, setGuestLastName] =
+    useState("");
+
   useEffect(() => {
     loadData();
   }, []);
@@ -202,6 +211,67 @@ export default function Presenze() {
     );
 
     setMessage("");
+  }
+
+  async function addGuest(date: string) {
+    const firstName = guestFirstName.trim();
+    const lastName = guestLastName.trim();
+
+    if (!firstName || !lastName) {
+      alert("Inserisci nome e cognome dell'ospite.");
+      return;
+    }
+
+    try {
+      const existingPlayer = players.find(
+        (player) =>
+          (player.first_name ?? "").trim().toLowerCase() ===
+            firstName.toLowerCase() &&
+          (player.last_name ?? "").trim().toLowerCase() ===
+            lastName.toLowerCase()
+      );
+
+      let guestId = existingPlayer?.id;
+
+      if (!guestId) {
+        const createdPlayer = await createPlayer(
+          firstName,
+          lastName,
+          "",
+          true
+        );
+
+        guestId = createdPlayer.id;
+      }
+
+      await saveAvailability(
+        guestId,
+        date,
+        "present"
+      );
+
+      const data = await getPlayers();
+      setPlayers(data);
+
+      setGuestFirstName("");
+      setGuestLastName("");
+      setAddingGuestDate(null);
+
+      setMessage(
+        "✓ Il giocatore è stato aggiunto."
+      );
+    } catch (error) {
+      console.error(
+        "Errore nel salvataggio dell'ospite:",
+        error
+      );
+
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Errore nel salvataggio dell'ospite."
+      );
+    }
   }
 
   async function addPlayer() {
@@ -636,8 +706,7 @@ export default function Presenze() {
                               </span>
 
                               {(role === "admin" ||
-  player.id === selectedPlayerId ||
-  player.is_external) && (
+  player.id === selectedPlayerId) && (
                                 <div
                                   style={{
                                     display:
@@ -710,6 +779,95 @@ export default function Presenze() {
                       }
                     )}
                   </div>
+
+                  {addingGuestDate === day.date && (
+                    <div
+                      style={{
+                        marginTop: 12,
+                        padding: 12,
+                        border: "1px solid #e5e5e5",
+                        borderRadius: 12,
+                      }}
+                    >
+                      <strong>
+                        Aggiungi ospite
+                      </strong>
+
+                      <div
+                        style={{
+                          display: "grid",
+                          gap: 8,
+                          marginTop: 10,
+                        }}
+                      >
+                        <input
+                          type="text"
+                          value={guestFirstName}
+                          onChange={(event) =>
+                            setGuestFirstName(
+                              event.target.value
+                            )
+                          }
+                          placeholder="Nome"
+                        />
+
+                        <input
+                          type="text"
+                          value={guestLastName}
+                          onChange={(event) =>
+                            setGuestLastName(
+                              event.target.value
+                            )
+                          }
+                          placeholder="Cognome"
+                        />
+
+                        <div
+                          style={{
+                            display: "flex",
+                            gap: 8,
+                          }}
+                        >
+                          <button
+                            type="button"
+                            className="primary-button"
+                            onClick={() =>
+                              addGuest(day.date)
+                            }
+                          >
+                            Aggiungi ospite
+                          </button>
+
+                          <button
+                            type="button"
+                            className="secondary-button"
+                            onClick={() => {
+                              setAddingGuestDate(null);
+                              setGuestFirstName("");
+                              setGuestLastName("");
+                            }}
+                          >
+                            Annulla
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    style={{
+                      marginTop: 12,
+                    }}
+                    onClick={() => {
+                      setAddingGuestDate(day.date);
+                      setGuestFirstName("");
+                      setGuestLastName("");
+                    }}
+                  >
+                    ＋ Aggiungi ospite
+                  </button>
                 </div>
               );
             })}
