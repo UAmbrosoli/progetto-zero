@@ -270,6 +270,9 @@ export async function PUT(request: Request) {
         ? body.email.trim()
         : "";
 
+    const is_external =
+      body.is_external === true;
+
     if (
       !first_name ||
       !last_name ||
@@ -296,6 +299,7 @@ export async function PUT(request: Request) {
         first_name,
         last_name,
         email,
+        is_external,
       })
       .eq("id", id)
       .select()
@@ -350,6 +354,16 @@ export async function DELETE(request: Request) {
       return NextResponse.json(
         { error: "Non autenticato." },
         { status: 401 }
+      );
+    }
+
+    if (role !== "admin") {
+      return NextResponse.json(
+        {
+          error:
+            "Non hai i privilegi per eliminare i giocatori.",
+        },
+        { status: 403 }
       );
     }
 
