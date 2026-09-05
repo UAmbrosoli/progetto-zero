@@ -1530,9 +1530,11 @@ h3 {
   color: white;
 }
 .home-hero-presenze {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 140px;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 360px;
   margin-top: 22px;
   padding-bottom: 10px;
   border-bottom: 2px solid currentColor;
