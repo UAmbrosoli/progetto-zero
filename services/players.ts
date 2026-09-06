@@ -18,7 +18,7 @@ export async function getPlayers(): Promise<Player[]> {
     );
   }
 
-  return result as Player[];
+  return result.players as Player[];
 }
 
 export async function createPlayer(

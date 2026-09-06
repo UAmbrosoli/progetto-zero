@@ -79,7 +79,7 @@ export async function GET(request: Request) {
       );
     }
 
-    return NextResponse.json(data);
+    return NextResponse.json({ players: data, role });
   } catch (error) {
     console.error(
       "ERRORE API GIOCATORI GET:",

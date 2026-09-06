@@ -13,6 +13,7 @@ import {
 
 export default function Giocatori() {
   const [players, setPlayers] = useState<Player[]>([]);
+  const [role, setRole] = useState<"admin" | "player" | null>(null);
 
   const [newFirstName, setNewFirstName] =
     useState("");
@@ -37,8 +38,15 @@ export default function Giocatori() {
 
   async function loadPlayers() {
     try {
-      const data = await getPlayers();
+      const [data, roleResponse] = await Promise.all([
+        getPlayers(),
+        fetch("/api/giocatori", { cache: "no-store" }),
+      ]);
+
+      const roleData = await roleResponse.json();
+
       setPlayers(data);
+      setRole(roleData.role ?? null);
     } catch (error) {
       console.error(
         "Errore nel caricamento dei giocatori:",
@@ -478,44 +486,48 @@ export default function Giocatori() {
                           </small>
                         </div>
 
-                        <button
-                          type="button"
-                          className="secondary-button"
-                          onClick={() =>
-                            startEditing(
-                              player
-                            )
-                          }
-                          aria-label={`Modifica ${displayName}`}
-                        >
-                          Modifica
-                        </button>
+                        {role === "admin" && (
+                          <>
+                            <button
+                              type="button"
+                              className="secondary-button"
+                              onClick={() =>
+                                startEditing(
+                                  player
+                                )
+                              }
+                              aria-label={`Modifica ${displayName}`}
+                            >
+                              Modifica
+                            </button>
 
-                        <button
-                          type="button"
-                          className="secondary-button"
-                          onClick={() =>
-                            toggleExternal(player)
-                          }
-                        >
-                          {player.is_external
-                            ? "Rendi giocatore"
-                            : "Rendi ospite"}
-                        </button>
+                            <button
+                              type="button"
+                              className="secondary-button"
+                              onClick={() =>
+                                toggleExternal(player)
+                              }
+                            >
+                              {player.is_external
+                                ? "Rendi giocatore"
+                                : "Rendi ospite"}
+                            </button>
 
-                        <button
-                          type="button"
-                          className="remove-button"
-                          onClick={() =>
-                            removePlayer(
-                              player.id,
-                              displayName
-                            )
-                          }
-                          aria-label={`Rimuovi ${displayName}`}
-                        >
-                          ×
-                        </button>
+                            <button
+                              type="button"
+                              className="remove-button"
+                              onClick={() =>
+                                removePlayer(
+                                  player.id,
+                                  displayName
+                                )
+                              }
+                              aria-label={`Rimuovi ${displayName}`}
+                            >
+                              ×
+                            </button>
+                          </>
+                        )}
                       </>
                     )}
                   </div>
