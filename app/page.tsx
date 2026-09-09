@@ -149,7 +149,7 @@ function getNextTuesday() {
   const day = today.getDay();
 
   const daysUntilTuesday =
-    day === 2 ? 7 : (2 - day + 7) % 7;
+    (2 - day + 7) % 7;
 
   const nextTuesday = new Date(today);
   nextTuesday.setDate(

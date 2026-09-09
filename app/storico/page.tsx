@@ -128,6 +128,7 @@ export default function Storico() {
 
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
+  const [admin, setAdmin] = useState(false);
 
   const [selectedPlayerId, setSelectedPlayerId] =
     useState("");
@@ -137,6 +138,16 @@ export default function Storico() {
 
   useEffect(() => {
     loadHistory();
+
+    fetch("/api/momenti")
+      .then((response) => response.json())
+      .then((data) => {
+        setAdmin(data.admin === true);
+      })
+      .catch((error) => {
+        console.error("Errore verifica ruolo Admin:", error);
+        setAdmin(false);
+      });
   }, []);
 
    async function loadHistory() {
@@ -707,6 +718,20 @@ console.log(
                               matchday.match_date
                             )}
                           </h2>
+
+                          {admin && (
+                            <Link
+                              href={`/nuova-giornata?matchday=${matchday.id}`}
+                              style={{
+                                display: "inline-block",
+                                marginTop: 8,
+                                fontSize: 14,
+                                fontWeight: 700,
+                              }}
+                            >
+                              ✏️ Modifica giornata
+                            </Link>
+                          )}
                         </div>
 
                         <span className="players-count">

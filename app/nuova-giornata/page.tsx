@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/utils/supabase/client";
 import {
@@ -40,8 +41,11 @@ const createSets = () => [
   { team1: "", team2: "" },
 ];
 
-export default function NuovaGiornata() {
+function NuovaGiornataContent() {
+  const searchParams = useSearchParams();
+  const requestedMatchdayId = searchParams.get("matchday") || undefined;
   const [players, setPlayers] = useState<Player[]>([]);
+  const [admin, setAdmin] = useState(false);
   const [playerAppearances, setPlayerAppearances] = useState<
     Record<string, number>
   >({});
@@ -92,10 +96,25 @@ export default function NuovaGiornata() {
 
     useEffect(() => {
     loadPlayers();
-    loadTodayMatchday();
-  }, []);
+    loadTodayMatchday(requestedMatchdayId);
 
- async function loadTodayMatchday() {
+    fetch("/api/momenti")
+      .then((response) => response.json())
+      .then((data) => {
+        setAdmin(data.admin === true);
+      })
+      .catch((error) => {
+        console.error(
+          "Errore verifica ruolo Admin:",
+          error
+        );
+        setAdmin(false);
+      });
+  }, [requestedMatchdayId]);
+
+ async function loadTodayMatchday(
+  requestedMatchdayId?: string
+) {
   setLoadingTodayMatches(true);
 
   try {
@@ -103,11 +122,16 @@ export default function NuovaGiornata() {
       new Date().toLocaleDateString("en-CA");
 
     const { data: matchdays, error: matchdayError } =
-      await supabase
-        .from("matchdays")
-        .select("id, match_date")
-        .eq("match_date", today)
-        .order("id", { ascending: false });
+      requestedMatchdayId
+        ? await supabase
+            .from("matchdays")
+            .select("id, match_date")
+            .eq("id", requestedMatchdayId)
+        : await supabase
+            .from("matchdays")
+            .select("id, match_date")
+            .eq("match_date", today)
+            .order("id", { ascending: false });
 
     if (matchdayError) {
       throw new Error(
@@ -170,6 +194,18 @@ export default function NuovaGiornata() {
       );
     }
 
+    const loadedPresentPlayers = Array.from(
+      new Set(
+        (matchPlayers || []).map(
+          (item) => item.player_id
+        )
+      )
+    );
+
+    setPresentPlayers(
+      loadedPresentPlayers.slice(0, 8)
+    );
+
     const { data: matchSets, error: setsError } =
       await supabase
         .from("match_sets")
@@ -189,6 +225,27 @@ export default function NuovaGiornata() {
         setsError.message
       );
     }
+
+    const { data: memorableMoments, error: momentsError } =
+      await supabase
+        .from("memorable_moments")
+        .select("match_id, comment")
+        .in("match_id", matchIds);
+
+    if (momentsError) {
+      throw new Error(
+        momentsError.message
+      );
+    }
+
+    const momentsByMatchId = new Map(
+      (memorableMoments || []).map(
+        (moment) => [
+          moment.match_id,
+          moment.comment,
+        ]
+      )
+    );
 
     const loadedCourts: Court[] =
       matches.map(
@@ -270,7 +327,8 @@ export default function NuovaGiornata() {
             id: `court-${match.id}`,
             players,
             sets,
-            comment: "",
+            comment:
+              momentsByMatchId.get(match.id) || "",
           };
         }
       );
@@ -1641,6 +1699,59 @@ const data = await createPlayer(
     );
   }
 
+ async function updateExistingMatch(
+  matchId: string,
+  court: Court
+) {
+  if (!admin) {
+    throw new Error(
+      "Solo l'Admin può modificare una partita già registrata."
+    );
+  }
+
+  const setsToSave = court.sets
+    .map((set, setIndex) => ({
+      match_id: matchId,
+      set_number: setIndex + 1,
+      team1_score: Number(set.team1),
+      team2_score: Number(set.team2),
+    }))
+    .filter(
+      (set) =>
+        !Number.isNaN(set.team1_score) &&
+        !Number.isNaN(set.team2_score)
+    );
+
+  if (setsToSave.length === 0) {
+    throw new Error(
+      "La partita deve avere almeno un set completo."
+    );
+  }
+
+  const { error: deleteSetsError } =
+    await supabase
+      .from("match_sets")
+      .delete()
+      .eq("match_id", matchId);
+
+  if (deleteSetsError) {
+    throw new Error(
+      deleteSetsError.message
+    );
+  }
+
+  const { error: insertSetsError } =
+    await supabase
+      .from("match_sets")
+      .insert(setsToSave);
+
+  if (insertSetsError) {
+    throw new Error(
+      insertSetsError.message
+    );
+  }
+}
+
  function validateBeforeSave() {
   if (
     presentPlayers.length !== 4 &&
@@ -1727,61 +1838,68 @@ setMessage("");
 let permissionWarning = false;
 
 try {
-  const today =
-    new Date().toLocaleDateString(
-      "en-CA"
-    );
-
-    // Cerchiamo la giornata di oggi.
-    const {
-      data: existingMatchdays,
-      error: matchdaysError,
-    } = await supabase
-      .from("matchdays")
-      .select("id, match_date")
-      .eq("match_date", today)
-      .order("id", {
-        ascending: false,
-      })
-      .limit(1);
-
-    if (matchdaysError) {
-      throw new Error(
-        matchdaysError.message
+      const today =
+      new Date().toLocaleDateString(
+        "en-CA"
       );
-    }
 
     let matchdayId: string;
 
-    if (
-      existingMatchdays &&
-      existingMatchdays.length > 0
-    ) {
-      matchdayId =
-        existingMatchdays[0].id;
+    if (requestedMatchdayId) {
+      // Stiamo modificando una giornata già esistente:
+      // manteniamo esattamente quella giornata.
+      matchdayId = requestedMatchdayId;
     } else {
+      // Nuova registrazione: lavoriamo sulla giornata di oggi.
       const {
-        data: newMatchday,
-        error: matchdayError,
+        data: existingMatchdays,
+        error: matchdaysError,
       } = await supabase
         .from("matchdays")
-        .insert({
-          match_date: today,
+        .select("id, match_date")
+        .eq("match_date", today)
+        .order("id", {
+          ascending: false,
         })
-        .select("id")
-        .single();
+        .limit(1);
 
-      if (
-        matchdayError ||
-        !newMatchday
-      ) {
+      if (matchdaysError) {
         throw new Error(
-          matchdayError?.message ||
-            "Impossibile creare la giornata."
+          matchdaysError.message
         );
       }
 
-      matchdayId = newMatchday.id;
+      if (
+        existingMatchdays &&
+        existingMatchdays.length > 0
+      ) {
+        matchdayId =
+          existingMatchdays[0].id;
+      } else {
+        const {
+          data: newMatchday,
+          error: matchdayError,
+        } = await supabase
+          .from("matchdays")
+          .insert({
+            match_date: today,
+          })
+          .select("id")
+          .single();
+
+        if (
+          matchdayError ||
+          !newMatchday
+        ) {
+          throw new Error(
+            matchdayError?.message ||
+              "Impossibile creare la giornata."
+          );
+        }
+
+        matchdayId =
+          newMatchday.id;
+      }
     }
 
     setTodayMatchdayId(matchdayId);
@@ -1839,6 +1957,37 @@ const alreadySaved =
   );
 
       if (alreadySaved) {
+        if (admin) {
+          await updateExistingMatch(
+            existingMatchId,
+            court
+          );
+
+          if (court.comment.trim()) {
+            const response = await fetch("/api/momenti", {
+              method: "PATCH",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                match_id: existingMatchId,
+                comment: court.comment.trim(),
+              }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+              throw new Error(
+                data.error ||
+                  "Errore nel salvataggio del momento memorabile."
+              );
+            }
+          }
+
+          continue;
+        }
+
         permissionWarning = true;
         continue;
       }
@@ -2921,3 +3070,11 @@ const smallLabel = {
   marginBottom: 8,
   opacity: 0.6,
 };
+
+export default function NuovaGiornata() {
+  return (
+    <Suspense fallback={null}>
+      <NuovaGiornataContent />
+    </Suspense>
+  );
+}

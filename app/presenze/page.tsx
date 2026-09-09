@@ -34,15 +34,12 @@ function getNextTuesdays(count: number): MatchDay[] {
     today.getDate()
   );
 
-  const daysUntilTuesday =
-    (2 - date.getDay() + 7) % 7;
+ const daysUntilTuesday =
+  (2 - date.getDay() + 7) % 7;
 
-  date.setDate(
-    date.getDate() +
-      (daysUntilTuesday === 0
-        ? 7
-        : daysUntilTuesday)
-  );
+date.setDate(
+  date.getDate() + daysUntilTuesday
+);
 
   for (let i = 0; i < count; i++) {
     const current = new Date(date);
