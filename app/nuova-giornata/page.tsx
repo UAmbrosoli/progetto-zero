@@ -96,6 +96,7 @@ function NuovaGiornataContent() {
 
     useEffect(() => {
     loadPlayers();
+    setTodayMatchesLoaded(false);
     loadTodayMatchday(requestedMatchdayId);
 
     fetch("/api/momenti")
@@ -142,6 +143,7 @@ function NuovaGiornataContent() {
     if (!matchdays || matchdays.length === 0) {
       setTodayMatchdayId(null);
       setCourts([]);
+      setPresentPlayers([]);
       return;
     }
 
@@ -1823,6 +1825,10 @@ const data = await createPlayer(
     return;
   }
 
+  if (loadingTodayMatches || !todayMatchesLoaded) {
+    return;
+  }
+
   const validationError =
     validateBeforeSave();
 
@@ -3002,8 +3008,10 @@ const alreadySaved =
             saveMatchday
           }
           disabled={
-            saving
-          }
+  saving ||
+  loadingTodayMatches ||
+  !todayMatchesLoaded
+}
           style={{
             width:
               "100%",
