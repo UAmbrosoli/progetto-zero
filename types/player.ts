@@ -3,6 +3,6 @@ export type Player = {
   name: string;
   first_name: string;
   last_name: string;
-  email: string;
+  email: string | null;
   is_external: boolean;
 };

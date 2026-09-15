@@ -127,9 +127,10 @@ export async function POST(request: Request) {
         : "";
 
     const email =
-      typeof body.email === "string"
-        ? body.email.trim()
-        : "";
+  typeof body.email === "string" &&
+  body.email.trim()
+    ? body.email.trim()
+    : null;
 
     const is_external =
       body.is_external === true;

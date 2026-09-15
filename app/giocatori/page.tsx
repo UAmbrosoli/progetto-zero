@@ -203,7 +203,7 @@ export default function Giocatori() {
         player.id,
         player.first_name,
         player.last_name,
-        player.email,
+        player.email ?? "",
         !player.is_external
       );
 
