@@ -393,15 +393,19 @@ export default function Trofei() {
     }
 
     for (const match of matches) {
-      const matchResults = playerResults.filter(
-        (item) => item.matchId === match.id
+      const playersForMatch = matchPlayers.filter(
+        (item) => item.match_id === match.id
       );
 
-      const winningPlayers = matchResults
-        .filter((item) => item.result === "win")
-        .map((item) => item.playerId);
+      const teamA = playersForMatch
+        .filter((item) => item.team === "A")
+        .map((item) => item.player_id);
 
-      if (winningPlayers.length !== 2) {
+      const teamB = playersForMatch
+        .filter((item) => item.team === "B")
+        .map((item) => item.player_id);
+
+      if (teamA.length !== 2 || teamB.length !== 2) {
         continue;
       }
 
@@ -409,22 +413,24 @@ export default function Trofei() {
         (set) => set.match_id === match.id
       );
 
-      const hadTieBreak = matchSets.some((set) => {
+      for (const set of matchSets) {
         const scoreA = Number(set.team1_score);
         const scoreB = Number(set.team2_score);
 
-        return (
-          (scoreA === 7 && scoreB === 6) ||
-          (scoreA === 6 && scoreB === 7)
-        );
-      });
-
-      if (hadTieBreak) {
-        for (const playerId of winningPlayers) {
-          tieBreakWins.set(
-            playerId,
-            (tieBreakWins.get(playerId) || 0) + 1
-          );
+        if (scoreA === 7 && scoreB === 6) {
+          for (const playerId of teamA) {
+            tieBreakWins.set(
+              playerId,
+              (tieBreakWins.get(playerId) || 0) + 1
+            );
+          }
+        } else if (scoreA === 6 && scoreB === 7) {
+          for (const playerId of teamB) {
+            tieBreakWins.set(
+              playerId,
+              (tieBreakWins.get(playerId) || 0) + 1
+            );
+          }
         }
       }
     }
