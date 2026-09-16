@@ -62,6 +62,8 @@ function NuovaGiornataContent() {
   const [saving, setSaving] =
     useState(false);
 
+  const [saved, setSaved] = useState(false);
+
   const [todayMatchdayId, setTodayMatchdayId] =
     useState<string | null>(null);
 
@@ -1824,6 +1826,9 @@ const data = await createPlayer(
   if (savingRef.current) {
     return;
   }
+  if (savedRef.current && !requestedMatchdayId) {
+    return;
+  }
 
   if (loadingTodayMatches || !todayMatchesLoaded) {
     return;
@@ -2155,6 +2160,11 @@ const alreadySaved =
     ? "⚠️ ATTENZIONE! Non hai i privilegi per modificare il risultato di una partita già registrata."
     : "Risultati salvati correttamente."
 );
+
+if (!requestedMatchdayId) {
+  savedRef.current = true;
+  setSaved(true);
+}
 
   } catch (error) {
     console.error(
@@ -3009,6 +3019,7 @@ const alreadySaved =
           }
           disabled={
   saving ||
+  saved ||
   loadingTodayMatches ||
   !todayMatchesLoaded
 }
