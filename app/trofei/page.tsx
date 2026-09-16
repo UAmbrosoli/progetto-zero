@@ -1024,6 +1024,7 @@ export default function Trofei() {
     playerResults,
     playerMap,
     matches,
+    matchPlayers,
     sets,
     matchdays,
   ]);
