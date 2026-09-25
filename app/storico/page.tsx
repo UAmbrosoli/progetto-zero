@@ -128,6 +128,12 @@ export default function Storico() {
 
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
+
+  const [newMatchdayDate, setNewMatchdayDate] =
+    useState("");
+
+  const [creatingMatchday, setCreatingMatchday] =
+    useState(false);
   const [admin, setAdmin] = useState(false);
 
   const [selectedPlayerId, setSelectedPlayerId] =
@@ -310,6 +316,56 @@ console.log(
       );
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function createPastMatchday() {
+    if (!newMatchdayDate) {
+      setMessage("Seleziona una data.");
+      return;
+    }
+
+    try {
+      setCreatingMatchday(true);
+      setMessage("");
+
+      const response = await fetch(
+        "/api/matchdays",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            match_date: newMatchdayDate,
+          }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          result.error ||
+            "Impossibile creare la giornata."
+        );
+      }
+
+      window.location.href =
+        `/nuova-giornata?matchday=${result.id}`;
+    } catch (error) {
+      console.error(
+        "Errore creazione giornata passata:",
+        error
+      );
+
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Impossibile creare la giornata."
+      );
+    } finally {
+      setCreatingMatchday(false);
     }
   }
 
@@ -661,6 +717,75 @@ console.log(
                   : "giornate"}
               </span>
             </div>
+
+            {admin && (
+              <div
+                style={{
+                  marginTop: 20,
+                  padding: 16,
+                  borderRadius: 16,
+                  background: "#f4f3ef",
+                }}
+              >
+                <p
+                  style={{
+                    margin: "0 0 10px",
+                    fontWeight: 700,
+                  }}
+                >
+                  Registra una giornata passata
+                </p>
+
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 10,
+                    alignItems: "center",
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <input
+                    type="date"
+                    value={newMatchdayDate}
+                    onChange={(event) =>
+                      setNewMatchdayDate(
+                        event.target.value
+                      )
+                    }
+                    style={{
+                      padding: "10px 12px",
+                      borderRadius: 10,
+                      border: "1px solid rgba(0,0,0,0.15)",
+                      fontSize: 15,
+                    }}
+                  />
+
+                  <button
+                    type="button"
+                    onClick={createPastMatchday}
+                    disabled={
+                      creatingMatchday ||
+                      !newMatchdayDate
+                    }
+                    style={{
+                      padding: "10px 14px",
+                      borderRadius: 10,
+                      border: "none",
+                      fontWeight: 700,
+                      cursor:
+                        creatingMatchday ||
+                        !newMatchdayDate
+                          ? "default"
+                          : "pointer",
+                    }}
+                  >
+                    {creatingMatchday
+                      ? "Creazione..."
+                      : "＋ Registra giornata"}
+                  </button>
+                </div>
+              </div>
+            )}
 
             {matchdays.length === 0 ? (
               <div className="empty-ranking">

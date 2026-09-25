@@ -67,6 +67,9 @@ function NuovaGiornataContent() {
   const [todayMatchdayId, setTodayMatchdayId] =
     useState<string | null>(null);
 
+  const [todayMatchdayDate, setTodayMatchdayDate] =
+    useState<string | null>(null);
+
   const [loadingTodayMatches, setLoadingTodayMatches] =
     useState(false);
     const [todayMatchesLoaded, setTodayMatchesLoaded] =
@@ -151,6 +154,10 @@ function NuovaGiornataContent() {
 
     const matchdayId =
       matchdays[0].id;
+
+    setTodayMatchdayDate(
+      matchdays[0].match_date
+    );
 
     setTodayMatchdayId(matchdayId);
 
@@ -2201,7 +2208,15 @@ if (!requestedMatchdayId) {
             </p>
 
             <h1>
-              Nuova giornata
+              {todayMatchdayDate
+                ? `Giornata del ${new Date(
+                    `${todayMatchdayDate}T12:00:00`
+                  ).toLocaleDateString("it-IT", {
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                  })}`
+                : "Nuova giornata"}
             </h1>
 
             <p className="matchday-subtitle">
