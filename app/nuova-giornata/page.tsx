@@ -1629,7 +1629,7 @@ const data = await createPlayer(
   firstName,
   lastName,
   email,
-  false
+  true
 );
       setPlayers(
         (current) =>
@@ -1701,13 +1701,6 @@ const data = await createPlayer(
     } finally {
       setAddingPlayer(false);
     }
-    setNewLastName("");
-    setNewEmail("");
-    setShowAddPlayer(false);
-    setAddingPlayer(false);
-    setMessage(
-      "Giocatore aggiunto."
-    );
   }
 
  async function updateExistingMatch(
