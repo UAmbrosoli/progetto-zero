@@ -84,11 +84,11 @@ function getCalendarDays() {
 
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-  const start = currentDay;
-  const end = currentDay + 6;
+  const start = Math.max(1, currentDay - 5);
+  const end = Math.min(daysInMonth, currentDay + 5);
 
   const daysUntilTuesday = (2 - today.getDay() + 7) % 7;
-const nextTuesdayDay = currentDay + daysUntilTuesday;
+  const nextTuesdayDay = currentDay + daysUntilTuesday;
 
   const days = [];
 
@@ -96,14 +96,14 @@ const nextTuesdayDay = currentDay + daysUntilTuesday;
     const date = new Date(year, month, day);
 
     days.push({
-      day,
+      day: date.getDate(),
       weekday: new Intl.DateTimeFormat("it-IT", {
         weekday: "short",
       })
         .format(date)
         .replace(".", ""),
-      isToday: day === currentDay,
-isNextTuesday: day === nextTuesdayDay,
+      isToday: date.getDate() === currentDay,
+      isNextTuesday: date.getDate() === nextTuesdayDay,
     });
   }
 
@@ -111,9 +111,7 @@ isNextTuesday: day === nextTuesdayDay,
     month: new Intl.DateTimeFormat("it-IT", {
       month: "short",
     }).format(today),
-
     year,
-
     days,
   };
 }
